@@ -22,19 +22,11 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-const REPORTS_BASE_URL = (window.WESO_REPORTS_BASE_URL || "").replace(/\/$/, "");
-
-function resolveReportEndpoint(pathKey, defaultPath) {
-  const configuredPath = window[pathKey] || defaultPath;
-  if (/^https?:\/\//.test(configuredPath)) return configuredPath;
-  return `${REPORTS_BASE_URL}${configuredPath}`;
-}
-
 const REPORT_ENDPOINTS = {
-  summary: resolveReportEndpoint("WESO_REPORTS_SUMMARY_PATH", "/api/reportsSummary"),
-  fundUse: resolveReportEndpoint("WESO_REPORTS_FUND_USE_PATH", "/api/reportsFundUse"),
-  beneficiaries: resolveReportEndpoint("WESO_REPORTS_BENEFICIARIES_PATH", "/api/reportsBeneficiaries"),
-  export: resolveReportEndpoint("WESO_REPORTS_EXPORT_PATH", "/api/reportsExport")
+  summary: window.WESO_REPORTS_SUMMARY_PATH || "/reportsSummary",
+  fundUse: window.WESO_REPORTS_FUND_USE_PATH || "/reportsFundUse",
+  beneficiaries: window.WESO_REPORTS_BENEFICIARIES_PATH || "/reportsBeneficiaries",
+  export: window.WESO_REPORTS_EXPORT_PATH || "/reportsExport"
 };
 
 const tabButtons = Array.from(document.querySelectorAll(".tab-btn"));
