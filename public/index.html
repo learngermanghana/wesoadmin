@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wesomo Child Cancer Foundation - Admin Dashboard</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <h1>Wesomo Child Cancer Foundation</h1>
+        <p>Admin Dashboard (Testing)</p>
+        <p id="auth-status">Not signed in.</p>
+      </div>
+      <form id="auth-form" class="auth-inline">
+        <input type="email" id="email" placeholder="admin@example.com" required />
+        <input type="password" id="password" placeholder="******" required minlength="6" />
+        <button type="submit" id="sign-in-btn">Sign In</button>
+        <button type="button" id="create-user-btn" class="secondary">Create Trial User</button>
+        <button type="button" id="sign-out-btn" class="danger" disabled>Sign Out</button>
+      </form>
+    </header>
+
+    <div id="auth-gate" class="auth-gate">
+      <h2>Login required</h2>
+      <p>Please sign in to access reports, clients, bulk SMS, and data manager.</p>
+    </div>
+
+    <div id="admin-shell" class="hidden-by-auth">
+      <nav class="page-nav">
+      <button class="tab-btn active" data-page="reports-page">Audit Reports</button>
+      <button class="tab-btn" data-page="clients-page">Clients</button>
+      <button class="tab-btn" data-page="bulk-sms-page">Bulk SMS</button>
+      <button class="tab-btn" data-page="data-page">Data Manager</button>
+    </nav>
+
+    <main>
+      <section class="page active" id="reports-page">
+        <div class="card">
+          <h2>Audit & Program Reports</h2>
+          <p class="hint">Calls report APIs: <code>/api/reportsSummary</code>, <code>/api/reportsFundUse</code>, <code>/api/reportsBeneficiaries</code>, and <code>/api/reportsExport</code>.</p>
+          <form id="reports-form">
+            <div class="split-3">
+              <label>
+                Start Date
+                <input type="date" id="report-start-date" required />
+              </label>
+              <label>
+                End Date
+                <input type="date" id="report-end-date" required />
+              </label>
+              <label>
+                Program Filter (optional)
+                <input type="text" id="report-program" placeholder="oncology-support" />
+              </label>
+            </div>
+            <div class="actions">
+              <button type="submit" id="run-reports-btn" disabled>Run Reports</button>
+              <button type="button" id="export-reports-btn" class="secondary" disabled>Build Export Payload</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+          <h3>Summary Report</h3>
+          <pre id="reports-summary" class="report-output">Run reports to see output.</pre>
+        </div>
+
+        <div class="card">
+          <h3>Fund Use Report</h3>
+          <pre id="reports-fund-use" class="report-output">Run reports to see output.</pre>
+        </div>
+
+        <div class="card">
+          <h3>Beneficiaries Report</h3>
+          <pre id="reports-beneficiaries" class="report-output">Run reports to see output.</pre>
+        </div>
+
+        <div class="card">
+          <h3>Export Payload</h3>
+          <pre id="reports-export" class="report-output">Click "Build Export Payload" to generate data.</pre>
+        </div>
+      </section>
+
+      <section class="page" id="clients-page">
+        <div class="card">
+          <h2>Client Data</h2>
+          <p class="hint">Save client contact and profile information for outreach.</p>
+          <form id="client-form">
+            <label>
+              Client ID (optional)
+              <input type="text" id="client-id" placeholder="auto-generated if empty" />
+            </label>
+            <label>
+              Full Name
+              <input type="text" id="client-name" placeholder="Jane Doe" required />
+            </label>
+            <div class="split-2">
+              <label>
+                Email
+                <input type="email" id="client-email" placeholder="jane@example.com" required />
+              </label>
+              <label>
+                Phone Number
+                <input type="text" id="client-phone" placeholder="+233xxxxxxxxx" required />
+              </label>
+            </div>
+            <label>
+              Notes
+              <textarea id="client-notes" rows="3" placeholder="Extra details"></textarea>
+            </label>
+            <div class="actions">
+              <button type="submit" id="save-client-btn" disabled>Save Client</button>
+              <button type="button" id="clear-client-btn" class="secondary">Clear</button>
+              <button type="button" id="load-clients-btn" class="secondary" disabled>Refresh List</button>
+            </div>
+          </form>
+        </div>
+        <div class="card">
+          <h2>Clients List</h2>
+          <div id="clients-list"></div>
+        </div>
+      </section>
+
+      <section class="page" id="bulk-sms-page">
+        <div class="card">
+          <h2>Bulk SMS</h2>
+          <p class="hint">Campaign draft page ready to connect to Hubtel backend.</p>
+          <form id="sms-form">
+            <label>
+              Campaign Name
+              <input type="text" id="campaign-name" placeholder="April Awareness Drive" required />
+            </label>
+            <label>
+              Message
+              <textarea id="sms-message" rows="4" maxlength="320" placeholder="Write SMS content" required></textarea>
+            </label>
+            <label>
+              Recipient Source
+              <select id="recipient-source">
+                <option value="clients">All clients in Firestore</option>
+                <option value="manual">Manual comma-separated numbers</option>
+              </select>
+            </label>
+            <label id="manual-numbers-wrap" class="hidden">
+              Manual Phone Numbers
+              <textarea id="manual-numbers" rows="3" placeholder="+233xxxx,+233yyyy"></textarea>
+            </label>
+            <div class="actions">
+              <button type="button" id="preview-recipients-btn" disabled>Preview Recipients</button>
+              <button type="submit" id="save-campaign-btn" disabled>Save Campaign Draft</button>
+            </div>
+          </form>
+          <p id="sms-recipient-preview" class="hint"></p>
+        </div>
+      </section>
+
+      <section class="page" id="data-page">
+        <div class="card" id="data-card">
+          <div class="row">
+            <h2>Collection Manager</h2>
+            <select id="collection-select" disabled>
+              <option value="donations">donations</option>
+              <option value="adminAuditLogs">adminAuditLogs</option>
+              <option value="adminRecords">adminRecords</option>
+              <option value="beneficiaryActivities">beneficiaryActivities</option>
+              <option value="beneficiaries">beneficiaries</option>
+              <option value="disbursements">disbursements</option>
+              <option value="clients">clients</option>
+              <option value="bulkSmsCampaigns">bulkSmsCampaigns</option>
+            </select>
+            <button id="load-btn" disabled>Load Data</button>
+          </div>
+          <div id="docs-list"></div>
+        </div>
+
+        <div class="card" id="editor-card">
+          <h2>Create / Update Document</h2>
+          <form id="doc-form">
+            <label>
+              Document ID (leave empty to auto-generate)
+              <input type="text" id="doc-id" placeholder="example123" />
+            </label>
+            <label>
+              JSON Data
+              <textarea id="doc-json" rows="10" placeholder='{"amount":10,"program":"direct-support"}' required></textarea>
+            </label>
+            <div class="actions">
+              <button type="submit" id="save-btn" disabled>Save Document</button>
+              <button type="button" id="clear-btn" class="secondary">Clear</button>
+            </div>
+          </form>
+        </div>
+      </section>
+    </main>
+    </div>
+
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
