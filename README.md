@@ -1,6 +1,6 @@
 # Wesomo Child Cancer Foundation Admin Dashboard
 
-A Firebase Hosting admin dashboard for testing operations, auditing, client management, and outreach workflows.
+A Vercel-hosted admin dashboard that uses Firebase for authentication and Firestore data storage.
 
 ## What this includes
 
@@ -33,19 +33,31 @@ A Firebase Hosting admin dashboard for testing operations, auditing, client mana
 ## Setup
 
 1. Put real Firebase web config values in `public/firebase-config.js`.
-2. Ensure Firebase CLI is logged in:
+2. Deploy frontend to Vercel from the project root:
+
+   ```bash
+   vercel login
+   vercel
+   vercel --prod
+   ```
+
+3. Deploy Firestore rules separately with Firebase CLI (backend only):
 
    ```bash
    firebase login
+   firebase use --add
+   firebase deploy --only "firestore:rules"
    ```
 
-3. Deploy Hosting + Firestore rules:
+## PowerShell notes
 
-   ```bash
-   firebase deploy
-   ```
+- In PowerShell, keep comma-separated `--only` values in quotes, e.g. `--only "hosting,firestore"`.
+- For this repo, **do not** run `firebase deploy` (that can deploy all configured Firebase resources).
+- Use only `firebase deploy --only "firestore:rules"` unless you intentionally add other Firebase products.
 
 ## Notes
 
+- Frontend hosting is expected on Vercel (`vercel.json` sets `public/` as output).
+- Firebase is used for Auth + Firestore backend access.
 - This setup is intentionally permissive for testing.
 - Before production, tighten `firestore.rules` and disable open trial account creation from UI.
