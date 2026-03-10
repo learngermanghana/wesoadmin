@@ -33,13 +33,27 @@ A Vercel-hosted admin dashboard that uses Firebase for authentication and Firest
 ## Setup
 
 1. Put real Firebase web config values in `public/firebase-config.js`.
-2. Deploy the frontend to Vercel (project root) using `vercel` CLI or the Vercel dashboard.
-3. If you still use Firestore rules from this repo, deploy rules separately with Firebase CLI:
+2. Deploy frontend to Vercel from the project root:
+
+   ```bash
+   vercel login
+   vercel
+   vercel --prod
+   ```
+
+3. Deploy Firestore rules separately with Firebase CLI (backend only):
 
    ```bash
    firebase login
-   firebase deploy --only firestore:rules
+   firebase use --add
+   firebase deploy --only "firestore:rules"
    ```
+
+## PowerShell notes
+
+- In PowerShell, keep comma-separated `--only` values in quotes, e.g. `--only "hosting,firestore"`.
+- For this repo, **do not** run `firebase deploy` (that can deploy all configured Firebase resources).
+- Use only `firebase deploy --only "firestore:rules"` unless you intentionally add other Firebase products.
 
 ## Notes
 
