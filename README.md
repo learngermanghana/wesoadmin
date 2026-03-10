@@ -9,6 +9,12 @@ A Vercel-hosted admin dashboard that uses Firebase for authentication and Firest
   - `POST /reportsFundUse`
   - `POST /reportsBeneficiaries`
   - `POST /reportsExport`
+- **Firebase Cloud Functions backend** for report APIs:
+  - `reportsSummary`
+  - `reportsFundUse`
+  - `reportsBeneficiaries`
+  - `reportsExport`
+- **GitHub Actions workflow** (`.github/workflows/deploy-functions.yml`) to deploy Cloud Functions on push to `main` (or manually).
 - Report API requests send `Authorization: Bearer <firebase-id-token>`.
 - Endpoint paths are configurable from frontend globals and default to:
   - `/reportsSummary`
@@ -52,8 +58,8 @@ A Vercel-hosted admin dashboard that uses Firebase for authentication and Firest
 ## PowerShell notes
 
 - In PowerShell, keep comma-separated `--only` values in quotes, e.g. `--only "hosting,firestore"`.
-- For this repo, **do not** run `firebase deploy` (that can deploy all configured Firebase resources).
-- Use only `firebase deploy --only "firestore:rules"` unless you intentionally add other Firebase products.
+- For this repo, avoid unscoped `firebase deploy` (that can deploy all configured Firebase resources).
+- Use `firebase deploy --only "firestore:rules"` for rules-only updates, or `firebase deploy --only functions` for the report APIs.
 
 ## Notes
 
@@ -61,3 +67,21 @@ A Vercel-hosted admin dashboard that uses Firebase for authentication and Firest
 - Firebase is used for Auth + Firestore backend access.
 - This setup is intentionally permissive for testing.
 - Before production, tighten `firestore.rules` and disable open trial account creation from UI.
+
+
+## GitHub deployment for functions
+
+1. Add repository secrets:
+   - `FIREBASE_SERVICE_ACCOUNT`: JSON for a Firebase service account with Cloud Functions deploy access.
+   - `FIREBASE_PROJECT_ID`: Firebase project ID.
+2. Push to `main` (or run the workflow manually).
+3. Workflow deploys with `firebase deploy --only functions`.
+
+## Local functions deploy
+
+```bash
+cd functions
+npm install
+cd ..
+firebase deploy --only functions
+```
