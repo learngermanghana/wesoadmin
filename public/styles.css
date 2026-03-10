@@ -180,3 +180,16 @@ button:disabled {
 .hidden {
   display: none;
 }
+
+.file-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #e2e8f0;
+  padding: 0.4rem 0.6rem;
+  border-radius: 8px;
+}
+
+.file-label input {
+  margin-top: 0;
+}
