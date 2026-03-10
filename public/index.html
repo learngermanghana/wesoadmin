@@ -29,171 +29,138 @@
 
     <div id="admin-shell" class="hidden-by-auth">
       <nav class="page-nav">
-      <button class="tab-btn active" data-page="reports-page">Audit Reports</button>
-      <button class="tab-btn" data-page="clients-page">Clients</button>
-      <button class="tab-btn" data-page="bulk-sms-page">Bulk SMS</button>
-      <button class="tab-btn" data-page="data-page">Data Manager</button>
-    </nav>
+        <button class="tab-btn active" data-page="reports-page">Audit Reports</button>
+        <button class="tab-btn" data-page="clients-page">Clients</button>
+        <button class="tab-btn" data-page="bulk-sms-page">Bulk SMS</button>
+        <button class="tab-btn" data-page="data-page">Data Manager</button>
+      </nav>
 
-    <main>
-      <section class="page active" id="reports-page">
-        <div class="card">
-          <h2>Audit & Program Reports</h2>
-          <p class="hint">Calls report APIs: <code>/reportsSummary</code>, <code>/reportsFundUse</code>, <code>/reportsBeneficiaries</code>, and <code>/reportsExport</code>.</p>
-          <form id="reports-form">
-            <div class="split-3">
-              <label>
-                Start Date
-                <input type="date" id="report-start-date" required />
-              </label>
-              <label>
-                End Date
-                <input type="date" id="report-end-date" required />
-              </label>
-              <label>
-                Program Filter (optional)
-                <input type="text" id="report-program" placeholder="oncology-support" />
-              </label>
-            </div>
-            <div class="actions">
-              <button type="submit" id="run-reports-btn" disabled>Run Reports</button>
-              <button type="button" id="export-reports-btn" class="secondary" disabled>Build Export Payload</button>
-            </div>
-          </form>
-        </div>
-
-        <div class="card">
-          <h3>Summary Report</h3>
-          <pre id="reports-summary" class="report-output">Run reports to see output.</pre>
-        </div>
-
-        <div class="card">
-          <h3>Fund Use Report</h3>
-          <pre id="reports-fund-use" class="report-output">Run reports to see output.</pre>
-        </div>
-
-        <div class="card">
-          <h3>Beneficiaries Report</h3>
-          <pre id="reports-beneficiaries" class="report-output">Run reports to see output.</pre>
-        </div>
-
-        <div class="card">
-          <h3>Export Payload</h3>
-          <pre id="reports-export" class="report-output">Click "Build Export Payload" to generate data.</pre>
-        </div>
-      </section>
-
-      <section class="page" id="clients-page">
-        <div class="card">
-          <h2>Client Data</h2>
-          <p class="hint">Save client contact and profile information for outreach.</p>
-          <form id="client-form">
-            <label>
-              Client ID (optional)
-              <input type="text" id="client-id" placeholder="auto-generated if empty" />
-            </label>
-            <label>
-              Full Name
-              <input type="text" id="client-name" placeholder="Jane Doe" required />
-            </label>
-            <div class="split-2">
-              <label>
-                Email
-                <input type="email" id="client-email" placeholder="jane@example.com" required />
-              </label>
-              <label>
-                Phone Number
-                <input type="text" id="client-phone" placeholder="+233xxxxxxxxx" required />
-              </label>
-            </div>
-            <label>
-              Notes
-              <textarea id="client-notes" rows="3" placeholder="Extra details"></textarea>
-            </label>
-            <div class="actions">
-              <button type="submit" id="save-client-btn" disabled>Save Client</button>
-              <button type="button" id="clear-client-btn" class="secondary">Clear</button>
-              <button type="button" id="load-clients-btn" class="secondary" disabled>Refresh List</button>
-            </div>
-          </form>
-        </div>
-        <div class="card">
-          <h2>Clients List</h2>
-          <div id="clients-list"></div>
-        </div>
-      </section>
-
-      <section class="page" id="bulk-sms-page">
-        <div class="card">
-          <h2>Bulk SMS</h2>
-          <p class="hint">Campaign draft page ready to connect to Hubtel backend.</p>
-          <form id="sms-form">
-            <label>
-              Campaign Name
-              <input type="text" id="campaign-name" placeholder="April Awareness Drive" required />
-            </label>
-            <label>
-              Message
-              <textarea id="sms-message" rows="4" maxlength="320" placeholder="Write SMS content" required></textarea>
-            </label>
-            <label>
-              Recipient Source
-              <select id="recipient-source">
-                <option value="clients">All clients in Firestore</option>
-                <option value="manual">Manual comma-separated numbers</option>
-              </select>
-            </label>
-            <label id="manual-numbers-wrap" class="hidden">
-              Manual Phone Numbers
-              <textarea id="manual-numbers" rows="3" placeholder="+233xxxx,+233yyyy"></textarea>
-            </label>
-            <div class="actions">
-              <button type="button" id="preview-recipients-btn" disabled>Preview Recipients</button>
-              <button type="submit" id="save-campaign-btn" disabled>Save Campaign Draft</button>
-            </div>
-          </form>
-          <p id="sms-recipient-preview" class="hint"></p>
-        </div>
-      </section>
-
-      <section class="page" id="data-page">
-        <div class="card" id="data-card">
-          <div class="row">
-            <h2>Collection Manager</h2>
-            <select id="collection-select" disabled>
-              <option value="donations">donations</option>
-              <option value="adminAuditLogs">adminAuditLogs</option>
-              <option value="adminRecords">adminRecords</option>
-              <option value="beneficiaryActivities">beneficiaryActivities</option>
-              <option value="beneficiaries">beneficiaries</option>
-              <option value="disbursements">disbursements</option>
-              <option value="clients">clients</option>
-              <option value="bulkSmsCampaigns">bulkSmsCampaigns</option>
-            </select>
-            <button id="load-btn" disabled>Load Data</button>
+      <main>
+        <section class="page active" id="reports-page">
+          <div class="card">
+            <h2>Audit & Program Reports</h2>
+            <form id="reports-form">
+              <div class="split-3">
+                <label>Start Date <input type="date" id="report-start-date" required /></label>
+                <label>End Date <input type="date" id="report-end-date" required /></label>
+                <label>Program Filter <input type="text" id="report-program" placeholder="oncology-support" /></label>
+              </div>
+              <div class="split-3">
+                <label>Saved Presets
+                  <select id="report-preset"><option value="">Select preset</option></select>
+                </label>
+              </div>
+              <div class="actions">
+                <button type="submit" id="run-reports-btn" disabled>Run Reports</button>
+                <button type="button" id="export-reports-btn" class="secondary" disabled>Build Export Payload</button>
+                <button type="button" id="save-preset-btn" class="secondary" disabled>Save Preset</button>
+                <button type="button" id="rerun-preset-btn" class="secondary" disabled>Run Preset</button>
+                <button type="button" id="download-report-csv-btn" class="secondary" disabled>Download CSV</button>
+                <button type="button" id="download-report-pdf-btn" class="secondary" disabled>Download PDF</button>
+              </div>
+            </form>
           </div>
-          <div id="docs-list"></div>
-        </div>
+          <div class="card"><h3>Summary Report</h3><pre id="reports-summary" class="report-output">Run reports to see output.</pre></div>
+          <div class="card"><h3>Fund Use Report</h3><pre id="reports-fund-use" class="report-output">Run reports to see output.</pre></div>
+          <div class="card"><h3>Beneficiaries Report</h3><pre id="reports-beneficiaries" class="report-output">Run reports to see output.</pre></div>
+          <div class="card"><h3>Export Payload</h3><pre id="reports-export" class="report-output">Click "Build Export Payload" to generate data.</pre></div>
+        </section>
 
-        <div class="card" id="editor-card">
-          <h2>Create / Update Document</h2>
-          <form id="doc-form">
-            <label>
-              Document ID (leave empty to auto-generate)
-              <input type="text" id="doc-id" placeholder="example123" />
-            </label>
-            <label>
-              JSON Data
-              <textarea id="doc-json" rows="10" placeholder='{"amount":10,"program":"direct-support"}' required></textarea>
-            </label>
+        <section class="page" id="clients-page">
+          <div class="card">
+            <h2>Client Data</h2>
+            <form id="client-form">
+              <label>Client ID (optional)<input type="text" id="client-id" placeholder="auto-generated if empty" /></label>
+              <label>Full Name<input type="text" id="client-name" placeholder="Jane Doe" required maxlength="120" /></label>
+              <div class="split-2">
+                <label>Email<input type="email" id="client-email" placeholder="jane@example.com" required maxlength="120" /></label>
+                <label>Phone Number<input type="text" id="client-phone" placeholder="+233xxxxxxxxx" required minlength="10" maxlength="16" /></label>
+              </div>
+              <label>Notes<textarea id="client-notes" rows="3" placeholder="Extra details" maxlength="500"></textarea></label>
+              <label><input type="checkbox" id="client-optout" /> SMS opt-out</label>
+              <div class="actions">
+                <button type="submit" id="save-client-btn" disabled>Save Client</button>
+                <button type="button" id="clear-client-btn" class="secondary">Clear</button>
+                <button type="button" id="load-clients-btn" class="secondary" disabled>Refresh List</button>
+                <button type="button" id="export-clients-btn" class="secondary" disabled>Export CSV</button>
+                <label class="file-label">Import CSV<input type="file" id="import-clients-input" accept=".csv" /></label>
+              </div>
+            </form>
+          </div>
+          <div class="card">
+            <h2>Clients List</h2>
             <div class="actions">
-              <button type="submit" id="save-btn" disabled>Save Document</button>
-              <button type="button" id="clear-btn" class="secondary">Clear</button>
+              <input id="client-search" type="text" placeholder="Search clients" />
+              <select id="client-filter">
+                <option value="all">All</option>
+                <option value="active">Active only</option>
+                <option value="deleted">Archived only</option>
+              </select>
+              <button type="button" class="secondary" id="client-prev-page">Prev</button>
+              <button type="button" class="secondary" id="client-next-page">Next</button>
+              <span id="client-page-info" class="hint"></span>
             </div>
-          </form>
-        </div>
-      </section>
-    </main>
+            <div id="clients-list"></div>
+          </div>
+        </section>
+
+        <section class="page" id="bulk-sms-page">
+          <div class="card">
+            <h2>Bulk SMS</h2>
+            <form id="sms-form">
+              <label>Campaign Name<input type="text" id="campaign-name" placeholder="April Awareness Drive" required /></label>
+              <label>Message<textarea id="sms-message" rows="4" maxlength="320" placeholder="Write SMS content" required></textarea></label>
+              <label>Recipient Source
+                <select id="recipient-source">
+                  <option value="clients">All clients in Firestore</option>
+                  <option value="manual">Manual comma-separated numbers</option>
+                </select>
+              </label>
+              <label id="manual-numbers-wrap" class="hidden">Manual Phone Numbers<textarea id="manual-numbers" rows="3" placeholder="+233xxxx,+233yyyy"></textarea></label>
+              <div class="actions">
+                <button type="button" id="preview-recipients-btn" disabled>Preview Recipients</button>
+                <button type="submit" id="save-campaign-btn" disabled>Save Campaign Draft</button>
+              </div>
+            </form>
+            <p id="sms-recipient-preview" class="hint"></p>
+          </div>
+          <div class="card"><h3>Campaign Analytics</h3><p id="campaign-analytics" class="hint"></p><div id="campaigns-list"></div></div>
+        </section>
+
+        <section class="page" id="data-page">
+          <div class="card" id="data-card">
+            <div class="row">
+              <h2>Collection Manager</h2>
+              <select id="collection-select" disabled>
+                <option value="donations">donations</option><option value="adminAuditLogs">adminAuditLogs</option><option value="adminRecords">adminRecords</option><option value="beneficiaryActivities">beneficiaryActivities</option><option value="beneficiaries">beneficiaries</option><option value="disbursements">disbursements</option><option value="clients">clients</option><option value="bulkSmsCampaigns">bulkSmsCampaigns</option>
+              </select>
+              <button id="load-btn" disabled>Load Data</button>
+              <button id="export-disbursements-btn" class="secondary" disabled>Export Disbursements CSV</button>
+              <label class="file-label">Import Disbursements CSV<input type="file" id="import-disbursements-input" accept=".csv" /></label>
+            </div>
+            <div class="actions">
+              <input id="data-search" type="text" placeholder="Search documents" />
+              <select id="data-filter"><option value="all">All</option><option value="active">Active only</option><option value="deleted">Archived only</option></select>
+              <button type="button" class="secondary" id="data-prev-page">Prev</button>
+              <button type="button" class="secondary" id="data-next-page">Next</button>
+              <span id="data-page-info" class="hint"></span>
+            </div>
+            <div id="docs-list"></div>
+          </div>
+
+          <div class="card" id="editor-card">
+            <h2>Create / Update Document</h2>
+            <form id="doc-form">
+              <label>Document ID (leave empty to auto-generate)<input type="text" id="doc-id" placeholder="example123" /></label>
+              <label>JSON Data<textarea id="doc-json" rows="10" placeholder='{"amount":10,"program":"direct-support"}' required></textarea></label>
+              <div class="actions">
+                <button type="submit" id="save-btn" disabled>Save Document</button>
+                <button type="button" id="clear-btn" class="secondary">Clear</button>
+              </div>
+            </form>
+          </div>
+        </section>
+      </main>
     </div>
 
     <script type="module" src="firebase-config.js"></script>
