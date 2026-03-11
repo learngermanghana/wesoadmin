@@ -1,7 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
 import {
   getAuth,
-  createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged
@@ -28,7 +27,7 @@ import {
   CLIENT_CONSTRAINTS
 } from "./src/components/utils.js";
 import { resolveReportEndpoints } from "./api/report-endpoints.js";
-import { bindPageRoutes, switchPage } from "./src/routes/index.js";
+import { bindPageRoutes, switchPage, applyRoute } from "./src/routes/index.js";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -52,7 +51,6 @@ const pages = Array.from(document.querySelectorAll(".page"));
 const authForm = $("auth-form");
 const emailInput = $("email");
 const passwordInput = $("password");
-const createUserBtn = $("create-user-btn");
 const signOutBtn = $("sign-out-btn");
 const authStatus = $("auth-status");
 const authGate = $("auth-gate");
@@ -80,8 +78,11 @@ const scheduleNameInput = $("schedule-name");
 const scheduleFrequencyInput = $("schedule-frequency");
 const scheduleChannelInput = $("schedule-channel");
 const scheduleDestinationInput = $("schedule-destination");
+const scheduleSheetIdInput = $("schedule-sheet-id");
 const saveScheduleBtn = $("save-schedule-btn");
 const scheduleList = $("schedule-list");
+const appsScriptReceiver = $("apps-script-receiver");
+const appsScriptTrigger = $("apps-script-trigger");
 const healthDashboard = $("health-dashboard");
 const clientForm = $("client-form");
 const clientIdInput = $("client-id");
@@ -110,6 +111,12 @@ const segmentProgramInput = $("segment-program");
 const quietHoursInput = $("quiet-hours");
 const manualNumbersWrap = $("manual-numbers-wrap");
 const manualNumbersInput = $("manual-numbers");
+const selectClientsWrap = $("select-clients-wrap");
+const smsClientSearchInput = $("sms-client-search");
+const smsClientStatusInput = $("sms-client-status");
+const smsClientProgramInput = $("sms-client-program");
+const smsSelectVisibleBtn = $("sms-select-visible-btn");
+const smsClientPicker = $("sms-client-picker");
 const previewRecipientsBtn = $("preview-recipients-btn");
 const saveCampaignBtn = $("save-campaign-btn");
 const smsRecipientPreview = $("sms-recipient-preview");
@@ -144,6 +151,7 @@ let dataPage = 1;
 let lastExportPayload = null;
 let pendingClientImport = [];
 let pendingDisbursementImport = [];
+let selectedSmsClientIds = new Set();
 
 if (window.Sentry && window.WESO_SENTRY_DSN) {
   window.Sentry.init({ dsn: window.WESO_SENTRY_DSN, environment: ENV });
@@ -191,6 +199,7 @@ async function logEvent(type, meta = {}) {
 function setViewVisibility(signedIn) {
   authGate.classList.toggle("hidden", signedIn);
   adminShell.classList.toggle("hidden-by-auth", !signedIn);
+  authForm.classList.toggle("hidden", signedIn);
 }
 function setSignedInState(signedIn) {
   [
@@ -234,6 +243,7 @@ function loadUrlState() {
 
 bindPageRoutes(tabButtons, pages);
 loadUrlState();
+applyRoute(tabButtons, pages);
 
 async function callReportEndpoint(path, payload) {
   if (!currentUser) throw new Error("Sign in first.");
@@ -330,8 +340,13 @@ async function buildExportPayload() {
 function renderSchedules() {
   const schedules = JSON.parse(localStorage.getItem("wesoReportSchedules") || "[]");
   scheduleList.innerHTML = schedules.length
-    ? schedules.map((s, idx) => `<div class="doc-item"><strong>${s.name}</strong><p>${s.frequency} -> ${s.channel}: ${s.destination}</p><button data-schedule-delete="${idx}" class="danger">Delete</button></div>`).join("")
-    : "<p class=\"hint\">No schedules configured yet.</p>";
+    ? schedules
+        .map(
+          (s, idx) =>
+            `<div class="doc-item"><strong>${s.name}</strong><p>${s.frequency} -> Google Sheet (${s.sheetId || "No sheet ID"})</p><p>Endpoint: ${s.destination || "-"}</p><button data-schedule-delete="${idx}" class="danger">Delete</button></div>`
+        )
+        .join("")
+    : '<p class="hint">No schedules configured yet.</p>';
   scheduleList.querySelectorAll("button[data-schedule-delete]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const list = JSON.parse(localStorage.getItem("wesoReportSchedules") || "[]");
@@ -340,7 +355,30 @@ function renderSchedules() {
       renderSchedules();
     });
   });
+
+  const sheetIdExample = schedules[0]?.sheetId || "YOUR_SHEET_ID";
+  appsScriptReceiver.textContent = `function doPost(e) {
+  const payload = JSON.parse(e.postData.contents || '{}');
+  const spreadsheet = SpreadsheetApp.openById(payload.sheetId);
+  const sheet = spreadsheet.getSheetByName('Queue') || spreadsheet.insertSheet('Queue');
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(['createdAt', 'name', 'frequency', 'message', 'status']);
+  }
+  sheet.appendRow([new Date(), payload.name || '', payload.frequency || '', payload.message || '', 'queued']);
+  return ContentService.createTextOutput(JSON.stringify({ ok: true })).setMimeType(ContentService.MimeType.JSON);
+}`;
+  appsScriptTrigger.textContent = `function processQueue() {
+  const sheet = SpreadsheetApp.openById('${sheetIdExample}').getSheetByName('Queue');
+  if (!sheet || sheet.getLastRow() < 2) return;
+  const values = sheet.getRange(2, 1, sheet.getLastRow() - 1, 5).getValues();
+  values.forEach((row, i) => {
+    if (row[4] === 'sent') return;
+    // Add your delivery action here (email/SMS/other).
+    sheet.getRange(i + 2, 5).setValue('sent');
+  });
+}`;
 }
+
 
 function renderClients() {
   const queryText = clientSearchInput.value.trim().toLowerCase();
@@ -396,6 +434,7 @@ async function loadClients() {
   clientsCache = [];
   snapshot.forEach((snap) => clientsCache.push({ id: snap.id, ...snap.data() }));
   renderClients();
+  renderSmsClientPicker();
 }
 
 function renderDocs() {
@@ -456,9 +495,46 @@ async function loadDocuments() {
 }
 
 function getManualRecipients() {
-  return manualNumbersInput.value.split(",").map((v) => v.trim()).filter(Boolean);
+  return manualNumbersInput.value
+    .split(",")
+    .map((v) => v.trim())
+    .filter(Boolean);
 }
-async function getClientRecipientsWithOptOut() {
+
+function getFilteredSmsClients() {
+  const text = smsClientSearchInput.value.trim().toLowerCase();
+  const status = smsClientStatusInput.value;
+  const program = smsClientProgramInput.value.trim().toLowerCase();
+  return clientsCache.filter((client) => {
+    const matchesText = !text || [client.name, client.email, client.phone].some((value) => String(value || "").toLowerCase().includes(text));
+    const matchesStatus = status === "all" || (status === "active" ? !client.isDeleted : !!client.isDeleted);
+    const matchesProgram = !program || String(client.program || "").toLowerCase().includes(program);
+    return matchesText && matchesStatus && matchesProgram;
+  });
+}
+
+function renderSmsClientPicker() {
+  if (!smsClientPicker) return;
+  const filtered = getFilteredSmsClients();
+  smsClientPicker.innerHTML = filtered.length ? "" : '<p class="hint">No matching clients.</p>';
+  filtered.forEach((client) => {
+    const row = document.createElement("label");
+    row.className = "picker-item";
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = selectedSmsClientIds.has(client.id);
+    checkbox.addEventListener("change", () => {
+      if (checkbox.checked) selectedSmsClientIds.add(client.id);
+      else selectedSmsClientIds.delete(client.id);
+    });
+    const text = document.createElement("span");
+    text.textContent = `${client.name || "Unnamed"} • ${client.phone || "No phone"}`;
+    row.append(checkbox, text);
+    smsClientPicker.append(row);
+  });
+}
+
+async function getClientRecipientsWithOptOut(sourceMode = "clients") {
   const segment = recipientSegment.value;
   const segmentProgram = segmentProgramInput.value.trim();
   const sourceQuery = segment === "active" ? query(collection(db, "clients"), where("isDeleted", "!=", true)) : collection(db, "clients");
@@ -467,6 +543,7 @@ async function getClientRecipientsWithOptOut() {
   const optOut = new Set();
   snapshot.forEach((snap) => {
     const d = snap.data();
+    if (sourceMode === "selected" && !selectedSmsClientIds.has(snap.id)) return;
     if (segment === "program" && segmentProgram && d.program !== segmentProgram) return;
     if (!d.phone) return;
     const normalized = String(d.phone).trim();
@@ -475,6 +552,7 @@ async function getClientRecipientsWithOptOut() {
   });
   return { recipients, optOut };
 }
+
 
 function renderCampaigns() {
   campaignsList.innerHTML = campaignsCache.length ? "" : "<p>No campaigns yet.</p>";
@@ -591,17 +669,9 @@ authForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   try {
     await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
-    showMessage("Signed in successfully.");
+    showMessage("Welcome back.");
   } catch (err) {
     showMessage(`Sign in failed: ${err.message}`);
-  }
-});
-createUserBtn.addEventListener("click", async () => {
-  try {
-    await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
-    showMessage("Trial user created and signed in.");
-  } catch (err) {
-    showMessage(`Create user failed: ${err.message}`);
   }
 });
 signOutBtn.addEventListener("click", async () => {
@@ -656,12 +726,16 @@ downloadPdfBtn.addEventListener("click", () => {
 
 scheduleForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  const destination = scheduleDestinationInput.value.trim();
+  const sheetId = scheduleSheetIdInput.value.trim();
+  if (!destination || !sheetId) return showMessage("Please add both Apps Script URL and Sheet ID.");
   const schedules = JSON.parse(localStorage.getItem("wesoReportSchedules") || "[]");
   schedules.push({
     name: scheduleNameInput.value.trim(),
     frequency: scheduleFrequencyInput.value,
     channel: scheduleChannelInput.value,
-    destination: scheduleDestinationInput.value.trim(),
+    destination,
+    sheetId,
     createdAt: new Date().toISOString()
   });
   localStorage.setItem("wesoReportSchedules", JSON.stringify(schedules));
@@ -730,6 +804,15 @@ clearClientBtn.addEventListener("click", () => {
   clientIdInput.value = "";
 });
 loadClientsBtn.addEventListener("click", async () => loadClients());
+[smsClientSearchInput, smsClientStatusInput, smsClientProgramInput].forEach((el) =>
+  el.addEventListener("input", () => {
+    renderSmsClientPicker();
+  })
+);
+smsSelectVisibleBtn.addEventListener("click", () => {
+  getFilteredSmsClients().forEach((client) => selectedSmsClientIds.add(client.id));
+  renderSmsClientPicker();
+});
 [clientSearchInput, clientFilterSelect].forEach((el) =>
   el.addEventListener("input", () => {
     clientPage = 1;
@@ -740,10 +823,12 @@ loadClientsBtn.addEventListener("click", async () => loadClients());
 clientPrevBtn.addEventListener("click", () => {
   clientPage -= 1;
   renderClients();
+  renderSmsClientPicker();
 });
 clientNextBtn.addEventListener("click", () => {
   clientPage += 1;
   renderClients();
+  renderSmsClientPicker();
 });
 [dataSearchInput, dataFilterSelect].forEach((el) =>
   el.addEventListener("input", () => {
@@ -763,11 +848,13 @@ dataNextBtn.addEventListener("click", () => {
 
 recipientSource.addEventListener("change", () => {
   manualNumbersWrap.classList.toggle("hidden", recipientSource.value !== "manual");
+  selectClientsWrap.classList.toggle("hidden", recipientSource.value !== "selected");
+  if (recipientSource.value === "selected") renderSmsClientPicker();
   smsRecipientPreview.textContent = "";
 });
 previewRecipientsBtn.addEventListener("click", async () => {
   if (!currentUser) return;
-  const source = recipientSource.value === "manual" ? { recipients: getManualRecipients(), optOut: new Set() } : await getClientRecipientsWithOptOut();
+  const source = recipientSource.value === "manual" ? { recipients: getManualRecipients(), optOut: new Set() } : await getClientRecipientsWithOptOut(recipientSource.value);
   const deduped = dedupeRecipients(source.recipients, source.optOut);
   smsRecipientPreview.textContent = `Recipients: ${deduped.recipients.length} | Duplicates removed: ${deduped.duplicateCount} | Opt-outs removed: ${deduped.optOutCount}`;
 });
@@ -777,7 +864,7 @@ smsForm.addEventListener("submit", async (event) => {
   if (!currentUser) return;
   try {
     if (smsMessageInput.value.trim().length > CLIENT_CONSTRAINTS.messageMax) throw new Error("SMS exceeds maximum length.");
-    const source = recipientSource.value === "manual" ? { recipients: getManualRecipients(), optOut: new Set() } : await getClientRecipientsWithOptOut();
+    const source = recipientSource.value === "manual" ? { recipients: getManualRecipients(), optOut: new Set() } : await getClientRecipientsWithOptOut(recipientSource.value);
     const deduped = dedupeRecipients(source.recipients, source.optOut);
     await addDoc(collection(db, "bulkSmsCampaigns"), {
       campaignName: campaignNameInput.value.trim(),
@@ -801,6 +888,8 @@ smsForm.addEventListener("submit", async (event) => {
     await logEvent("sms_campaign_saved", { campaignName: campaignNameInput.value.trim(), count: deduped.recipients.length });
     smsForm.reset();
     manualNumbersWrap.classList.add("hidden");
+    selectClientsWrap.classList.add("hidden");
+    selectedSmsClientIds.clear();
     smsRecipientPreview.textContent = "Campaign draft saved with dedupe and opt-out checks.";
     await loadCampaigns();
   } catch (error) {
@@ -867,6 +956,7 @@ onAuthStateChanged(auth, async (user) => {
     const presets = JSON.parse(localStorage.getItem("wesoReportPresets") || "[]");
     reportPresetSelect.innerHTML = '<option value="">Select preset</option>' + presets.map((p, i) => `<option value="${i}">${p.name}</option>`).join("");
     renderSchedules();
+    applyRoute(tabButtons, pages);
     await Promise.all([loadClients(), loadCampaigns(), loadHealthMetrics()]);
   } else showMessage("Not signed in.");
 });

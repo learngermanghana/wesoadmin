@@ -215,3 +215,24 @@ canvas {
   padding: 0.8rem 1rem;
   border-radius: 10px;
 }
+
+.picker-list {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  max-height: 220px;
+  overflow: auto;
+  padding: 0.5rem;
+}
+
+.picker-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+  font-weight: 500;
+}
+
+.picker-item input {
+  width: auto;
+  margin: 0;
+}
