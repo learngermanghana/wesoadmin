@@ -16,25 +16,25 @@ import {
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
-import { validateClient, dedupeRecipients, paginate, toCsv, CLIENT_CONSTRAINTS } from "./utils.js";
+import { validateClient, dedupeRecipients, paginate, toCsv, CLIENT_CONSTRAINTS } from "./src/components/utils.js";
+import { resolveReportEndpoints } from "./api/report-endpoints.js";
+import { bindPageRoutes, switchPage } from "./src/routes/index.js";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const ENV = window.WESO_ENV || "dev";
 const BASE = window.WESO_API_BASE || "";
-const ENV_PATHS = {
-  dev: { summary: "/reportsSummary", fundUse: "/reportsFundUse", beneficiaries: "/reportsBeneficiaries", export: "/reportsExport" },
-  staging: { summary: "/staging/reportsSummary", fundUse: "/staging/reportsFundUse", beneficiaries: "/staging/reportsBeneficiaries", export: "/staging/reportsExport" },
-  prod: { summary: "/reportsSummary", fundUse: "/reportsFundUse", beneficiaries: "/reportsBeneficiaries", export: "/reportsExport" }
-};
-const RESOLVED = ENV_PATHS[ENV] || ENV_PATHS.dev;
-const REPORT_ENDPOINTS = {
-  summary: `${BASE}${window.WESO_REPORTS_SUMMARY_PATH || RESOLVED.summary}`,
-  fundUse: `${BASE}${window.WESO_REPORTS_FUND_USE_PATH || RESOLVED.fundUse}`,
-  beneficiaries: `${BASE}${window.WESO_REPORTS_BENEFICIARIES_PATH || RESOLVED.beneficiaries}`,
-  export: `${BASE}${window.WESO_REPORTS_EXPORT_PATH || RESOLVED.export}`
-};
+const REPORT_ENDPOINTS = resolveReportEndpoints({
+  env: ENV,
+  base: BASE,
+  overrides: {
+    summary: window.WESO_REPORTS_SUMMARY_PATH,
+    fundUse: window.WESO_REPORTS_FUND_USE_PATH,
+    beneficiaries: window.WESO_REPORTS_BENEFICIARIES_PATH,
+    export: window.WESO_REPORTS_EXPORT_PATH
+  }
+});
 
 const $ = (id) => document.getElementById(id);
 const tabButtons = Array.from(document.querySelectorAll(".tab-btn"));
@@ -144,9 +144,7 @@ function setViewVisibility(signedIn) { authGate.classList.toggle("hidden", signe
 function setSignedInState(signedIn) {
   [signOutBtn, saveBtn, loadBtn, collectionSelect, saveClientBtn, loadClientsBtn, previewRecipientsBtn, saveCampaignBtn, runReportsBtn, exportReportsBtn, savePresetBtn, rerunPresetBtn, downloadCsvBtn, downloadPdfBtn, exportClientsBtn, exportDisbursementsBtn].forEach((el) => { if (el) el.disabled = !signedIn; });
 }
-function switchPage(pageId) { tabButtons.forEach((b) => b.classList.toggle("active", b.dataset.page === pageId)); pages.forEach((p) => p.classList.toggle("active", p.id === pageId)); }
-
-tabButtons.forEach((btn) => btn.addEventListener("click", () => switchPage(btn.dataset.page)));
+bindPageRoutes(tabButtons, pages);
 
 async function callReportEndpoint(path, payload) {
   if (!currentUser) throw new Error("Sign in first.");
@@ -222,7 +220,7 @@ function renderDocs() {
     wrapper.innerHTML = `<h3>${d.id} ${d.isDeleted ? "(Archived)" : ""}</h3><pre>${pretty(d)}</pre>`;
     const actions = document.createElement("div"); actions.className = "doc-actions";
     const editBtn = Object.assign(document.createElement("button"), { textContent: "Edit", className: "secondary" });
-    editBtn.onclick = () => { docIdInput.value = d.id; const { id, ...body } = d; docJsonInput.value = pretty(body); switchPage("data-page"); };
+    editBtn.onclick = () => { docIdInput.value = d.id; const { id, ...body } = d; docJsonInput.value = pretty(body); switchPage(tabButtons, pages, "data-page"); };
     const deleteBtn = Object.assign(document.createElement("button"), { textContent: d.isDeleted ? "Restore" : "Archive", className: d.isDeleted ? "secondary" : "danger" });
     deleteBtn.onclick = async () => { await setDoc(doc(db, collectionSelect.value, d.id), { isDeleted: !d.isDeleted, deletedAt: !d.isDeleted ? serverTimestamp() : null, deletedBy: !d.isDeleted ? (currentUser.email || currentUser.uid) : null }, { merge: true }); await loadDocuments(); };
     actions.append(editBtn, deleteBtn); wrapper.append(actions); docsList.append(wrapper);

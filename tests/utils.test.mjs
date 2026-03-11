@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { validateClient, dedupeRecipients, paginate, toCsv } from '../public/utils.js';
+import { validateClient, dedupeRecipients, paginate, toCsv } from '../web/src/components/utils.js';
 
 test('validateClient catches invalid email and phone', () => {
   const errors = validateClient({ name: 'A', email: 'bad', phone: '123', notes: '' });
