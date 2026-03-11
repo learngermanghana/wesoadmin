@@ -2,37 +2,12 @@ import { onRequest, HttpsError } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions";
 import { initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
-import { getFirestore, Timestamp } from "firebase-admin/firestore";
+import { getFirestore } from "firebase-admin/firestore";
+import { normalizeFilters } from "./report-helpers.js";
 
 initializeApp();
 
 const db = getFirestore();
-
-function normalizeFilters(payload = {}) {
-  const { startDate, endDate, program } = payload;
-  if (!startDate || !endDate) {
-    throw new HttpsError("invalid-argument", "startDate and endDate are required.");
-  }
-
-  const start = Timestamp.fromDate(new Date(`${startDate}T00:00:00.000Z`));
-  const end = Timestamp.fromDate(new Date(`${endDate}T23:59:59.999Z`));
-
-  if (Number.isNaN(start.toMillis()) || Number.isNaN(end.toMillis())) {
-    throw new HttpsError("invalid-argument", "Invalid startDate or endDate.");
-  }
-
-  if (end.toMillis() < start.toMillis()) {
-    throw new HttpsError("invalid-argument", "endDate cannot be before startDate.");
-  }
-
-  return {
-    start,
-    end,
-    startDate,
-    endDate,
-    program: typeof program === "string" && program.trim() ? program.trim() : null
-  };
-}
 
 async function verifyBearerToken(req) {
   const authHeader = req.get("authorization") || "";
@@ -174,4 +149,37 @@ export const reportsExport = withCorsAndErrors(async (filters, auth) => {
     },
     auth
   );
+});
+
+export const smsDeliveryWebhook = onRequest({ cors: true, region: "us-central1" }, async (req, res) => {
+  if (req.method !== "POST") {
+    res.status(405).json({ error: "Method not allowed. Use POST." });
+    return;
+  }
+
+  const { campaignId, status, failureReason, providerMessageId, costGhs } = req.body || {};
+  if (!campaignId || !status) {
+    res.status(400).json({ error: "campaignId and status are required." });
+    return;
+  }
+
+  await db.collection("bulkSmsCampaigns").doc(String(campaignId)).set(
+    {
+      deliveryStatus: status,
+      failureReason: failureReason || null,
+      providerMessageId: providerMessageId || null,
+      costGhs: Number(costGhs || 0),
+      callbackAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    },
+    { merge: true }
+  );
+
+  await db.collection("adminAuditLogs").add({
+    type: "sms_delivery_webhook",
+    at: new Date().toISOString(),
+    meta: { campaignId, status, failureReason, providerMessageId }
+  });
+
+  res.status(200).json({ ok: true });
 });
