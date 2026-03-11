@@ -84,6 +84,14 @@ const scheduleList = $("schedule-list");
 const appsScriptReceiver = $("apps-script-receiver");
 const appsScriptTrigger = $("apps-script-trigger");
 const healthDashboard = $("health-dashboard");
+const refreshDashboardBtn = $("refresh-dashboard-btn");
+const dashboardDisbursements = $("dashboard-disbursements");
+const dashboardBeneficiaries = $("dashboard-beneficiaries");
+const dashboardDonations = $("dashboard-donations");
+const dashboardExports = $("dashboard-exports");
+const dashboardAudit = $("dashboard-audit");
+const dashboardLastUpdated = $("dashboard-last-updated");
+const dashboardActivityList = $("dashboard-activity-list");
 const clientForm = $("client-form");
 const clientIdInput = $("client-id");
 const clientNameInput = $("client-name");
@@ -204,6 +212,7 @@ function setViewVisibility(signedIn) {
 function setSignedInState(signedIn) {
   [
     signOutBtn,
+    refreshDashboardBtn,
     saveBtn,
     loadBtn,
     collectionSelect,
@@ -665,6 +674,33 @@ async function loadHealthMetrics() {
   healthDashboard.textContent = `Daily active admins: ${activeUsers} | Report runs: ${reportRuns} | SMS queue backlog: ${queueBacklog}`;
 }
 
+async function refreshDashboardOverview() {
+  if (!currentUser || !dashboardActivityList) return;
+  const [disbursementsSnap, beneficiariesSnap, donationsSnap, exportsSnap, auditSnap] = await Promise.all([
+    getDocs(collection(db, "disbursements")),
+    getDocs(collection(db, "beneficiaries")),
+    getDocs(collection(db, "donations")),
+    getDocs(collection(db, "exports")),
+    getDocs(collection(db, "adminAuditLogs"))
+  ]);
+  if (dashboardDisbursements) dashboardDisbursements.textContent = String(disbursementsSnap.size);
+  if (dashboardBeneficiaries) dashboardBeneficiaries.textContent = String(beneficiariesSnap.size);
+  if (dashboardDonations) dashboardDonations.textContent = String(donationsSnap.size);
+  if (dashboardExports) dashboardExports.textContent = String(exportsSnap.size);
+  if (dashboardAudit) dashboardAudit.textContent = String(auditSnap.size);
+  if (dashboardLastUpdated) dashboardLastUpdated.textContent = new Date().toLocaleString();
+
+  const recent = auditSnap.docs
+    .map((d) => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => String(b.at || "").localeCompare(String(a.at || "")))
+    .slice(0, 6);
+  dashboardActivityList.innerHTML = recent.length
+    ? recent
+        .map((entry) => `<div class="doc-item"><strong>${entry.type || "activity"}</strong><p>${entry.user || "system"} · ${entry.at || "time unavailable"}</p></div>`)
+        .join("")
+    : '<p class="hint">No activity records yet.</p>';
+}
+
 authForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   try {
@@ -680,6 +716,16 @@ signOutBtn.addEventListener("click", async () => {
   clientsList.innerHTML = "";
   showMessage("Signed out.");
 });
+if (refreshDashboardBtn) {
+  refreshDashboardBtn.addEventListener("click", async () => {
+    try {
+      await refreshDashboardOverview();
+      toastMessage("Dashboard refreshed.");
+    } catch (error) {
+      showMessage(`Dashboard refresh failed: ${error.message}`);
+    }
+  });
+}
 reportsForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   try {
@@ -957,6 +1003,6 @@ onAuthStateChanged(auth, async (user) => {
     reportPresetSelect.innerHTML = '<option value="">Select preset</option>' + presets.map((p, i) => `<option value="${i}">${p.name}</option>`).join("");
     renderSchedules();
     applyRoute(tabButtons, pages);
-    await Promise.all([loadClients(), loadCampaigns(), loadHealthMetrics()]);
+    await Promise.all([loadClients(), loadCampaigns(), loadHealthMetrics(), refreshDashboardOverview()]);
   } else showMessage("Not signed in.");
 });

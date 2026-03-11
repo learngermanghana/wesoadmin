@@ -40,59 +40,59 @@
       <main>
         <section class="page active" id="reports-page">
           <div class="card">
-            <h2>Overview</h2>
-            <form id="reports-form">
-              <div class="split-3">
-                <label>Start Date <input type="date" id="report-start-date" required /></label>
-                <label>End Date <input type="date" id="report-end-date" required /></label>
-                <label>Program Filter <input type="text" id="report-program" placeholder="oncology-support" /></label>
-              </div>
-              <div class="split-3">
-                <label>Saved Presets
-                  <select id="report-preset"><option value="">Select preset</option></select>
-                </label>
-              </div>
-              <div class="actions">
-                <button type="submit" id="run-reports-btn" disabled>Run Reports</button>
-                <button type="button" id="export-reports-btn" class="secondary" disabled>Build Export Payload</button>
-                <button type="button" id="save-preset-btn" class="secondary" disabled>Save Preset</button>
-                <button type="button" id="rerun-preset-btn" class="secondary" disabled>Run Preset</button>
-                <button type="button" id="download-report-csv-btn" class="secondary" disabled>Download CSV</button>
-                <button type="button" id="download-report-pdf-btn" class="secondary" disabled>Download PDF</button>
-              </div>
-            </form>
+            <div class="row">
+              <h2>Dashboard Overview</h2>
+              <button type="button" id="refresh-dashboard-btn" class="secondary" disabled>Refresh Activity</button>
+            </div>
+            <p class="hint">This dashboard updates from activities recorded on Funds Use, Beneficiaries, Donations, Exports, and Audit Log pages.</p>
+            <div class="split-3">
+              <div><strong id="dashboard-disbursements">0</strong><p class="hint">Funds use records</p></div>
+              <div><strong id="dashboard-beneficiaries">0</strong><p class="hint">Beneficiary records</p></div>
+              <div><strong id="dashboard-donations">0</strong><p class="hint">Donation records</p></div>
+            </div>
+            <div class="split-3">
+              <div><strong id="dashboard-exports">0</strong><p class="hint">Export requests</p></div>
+              <div><strong id="dashboard-audit">0</strong><p class="hint">Audit events</p></div>
+              <div><strong id="dashboard-last-updated">-</strong><p class="hint">Last synced</p></div>
+            </div>
           </div>
           <div class="card">
-            <h3>Report Scheduling</h3>
+            <h3>Recent Activity</h3>
+            <div id="dashboard-activity-list" class="hint">No activity loaded yet.</div>
+          </div>
+
+          <div class="hidden" aria-hidden="true">
+            <form id="reports-form">
+              <input type="date" id="report-start-date" />
+              <input type="date" id="report-end-date" />
+              <input type="text" id="report-program" />
+              <select id="report-preset"><option value="">Select preset</option></select>
+              <button type="submit" id="run-reports-btn" disabled>Run Reports</button>
+              <button type="button" id="export-reports-btn" class="secondary" disabled>Build Export Payload</button>
+              <button type="button" id="save-preset-btn" class="secondary" disabled>Save Preset</button>
+              <button type="button" id="rerun-preset-btn" class="secondary" disabled>Run Preset</button>
+              <button type="button" id="download-report-csv-btn" class="secondary" disabled>Download CSV</button>
+              <button type="button" id="download-report-pdf-btn" class="secondary" disabled>Download PDF</button>
+            </form>
             <form id="schedule-form">
-              <div class="split-3">
-                <label>Name <input id="schedule-name" type="text" placeholder="Weekly program digest" required /></label>
-                <label>Frequency
-                  <select id="schedule-frequency"><option value="daily">Daily</option><option value="weekly">Weekly</option></select>
-                </label>
-                <label>Delivery Target
-                  <select id="schedule-channel"><option value="sheet">Google Sheet (Apps Script)</option></select>
-                </label>
-              </div>
-              <label>Apps Script Web App URL<input id="schedule-destination" type="text" placeholder="https://script.google.com/macros/s/.../exec" /></label>
-              <label>Google Sheet ID<input id="schedule-sheet-id" type="text" placeholder="1AbCdEf..." /></label>
+              <input id="schedule-name" type="text" />
+              <select id="schedule-frequency"><option value="daily">Daily</option></select>
+              <select id="schedule-channel"><option value="sheet">Google Sheet (Apps Script)</option></select>
+              <input id="schedule-destination" type="text" />
+              <input id="schedule-sheet-id" type="text" />
               <button type="submit" id="save-schedule-btn" class="secondary" disabled>Save Schedule</button>
             </form>
             <div id="schedule-list"></div>
-            <h4>Apps Script (Web App Receiver)</h4>
-            <p class="hint">Deploy this script as a Web App. It receives dashboard schedule messages and writes them into a sheet tab named <strong>Queue</strong>.</p>
             <pre id="apps-script-receiver" class="report-output"></pre>
-            <h4>Apps Script (Google Sheet Trigger)</h4>
-            <p class="hint">Paste this into the same sheet project, then run a time trigger on <strong>processQueue</strong> to process queued messages.</p>
             <pre id="apps-script-trigger" class="report-output"></pre>
+            <pre id="reports-summary" class="report-output"></pre>
+            <pre id="reports-fund-use" class="report-output"></pre>
+            <pre id="reports-beneficiaries" class="report-output"></pre>
+            <pre id="reports-export" class="report-output"></pre>
+            <canvas id="disbursement-trend-chart" width="640" height="260"></canvas>
+            <canvas id="beneficiary-growth-chart" width="640" height="260"></canvas>
+            <p id="health-dashboard" class="hint"></p>
           </div>
-          <div class="card"><h3>Summary Report</h3><pre id="reports-summary" class="report-output">Run reports to see output.</pre></div>
-          <div class="card"><h3>Fund Use Report</h3><pre id="reports-fund-use" class="report-output">Run reports to see output.</pre></div>
-          <div class="card"><h3>Beneficiaries Report</h3><pre id="reports-beneficiaries" class="report-output">Run reports to see output.</pre></div>
-          <div class="card"><h3>Export Payload</h3><pre id="reports-export" class="report-output">Click "Build Export Payload" to generate data.</pre></div>
-          <div class="card"><h3>Trend: Weekly/Monthly Disbursements</h3><canvas id="disbursement-trend-chart" width="640" height="260"></canvas></div>
-          <div class="card"><h3>Trend: Beneficiary Growth</h3><canvas id="beneficiary-growth-chart" width="640" height="260"></canvas></div>
-          <div class="card"><h3>Health Dashboard</h3><p id="health-dashboard" class="hint">No metrics loaded yet.</p></div>
         </section>
 
         <section class="page" id="clients-page">
@@ -137,10 +137,10 @@
 
         <section class="page" id="bulk-sms-page">
           <div class="card">
-            <h2>Bulk SMS</h2>
+            <h2>Funds Use</h2>
             <form id="sms-form">
-              <label>Campaign Name<input type="text" id="campaign-name" placeholder="April Awareness Drive" required /></label>
-              <label>Message<textarea id="sms-message" rows="4" maxlength="320" placeholder="Write SMS content" required></textarea></label>
+              <label>Entry Title<input type="text" id="campaign-name" placeholder="April Chemotherapy Disbursement" required /></label>
+              <label>Fund Use Notes<textarea id="sms-message" rows="4" maxlength="320" placeholder="Describe why and how funds were used" required></textarea></label>
               <label>Recipient Source
                 <select id="recipient-source">
                   <option value="clients">All clients</option>
@@ -176,13 +176,13 @@
             </form>
             <p id="sms-recipient-preview" class="hint"></p>
           </div>
-          <div class="card"><h3>Campaign Analytics</h3><p id="campaign-analytics" class="hint"></p><div id="campaigns-list"></div></div>
+          <div class="card"><h3>Funds Use Activity</h3><p id="campaign-analytics" class="hint"></p><div id="campaigns-list"></div></div>
         </section>
 
         <section class="page" id="data-page">
           <div class="card" id="data-card">
             <div class="row">
-              <h2>Data Records</h2>
+              <h2>Beneficiaries</h2>
               <select id="collection-select" disabled>
                 <option value="donations">donations</option><option value="adminAuditLogs">adminAuditLogs</option><option value="adminRecords">adminRecords</option><option value="beneficiaryActivities">beneficiaryActivities</option><option value="beneficiaries">beneficiaries</option><option value="disbursements">disbursements</option><option value="clients">clients</option><option value="bulkSmsCampaigns">bulkSmsCampaigns</option>
               </select>
@@ -204,7 +204,7 @@
 
           <div class="card" id="editor-card">
             <h2>Create / Update Document</h2>
-            <p class="hint">Paste valid JSON only. Example: {"amount":10,"program":"direct-support"}. Fields like createdAt/updatedAt are set automatically.</p>
+            <p class="hint">Create or update beneficiary records in JSON format (example: {"fullName":"Jane Doe","program":"oncology-support"}).</p>
             <form id="doc-form">
               <label>Document ID (leave empty to auto-generate)<input type="text" id="doc-id" placeholder="example123" /></label>
               <label>JSON Data<textarea id="doc-json" rows="10" placeholder='{"amount":10,"program":"direct-support"}' required></textarea></label>
