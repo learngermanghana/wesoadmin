@@ -10,21 +10,20 @@
     <header class="topbar">
       <div>
         <h1>Wesomo Child Cancer Foundation</h1>
-        <p>Admin Dashboard (Testing)</p>
+        <p>Admin Dashboard</p>
         <p id="auth-status">Not signed in.</p>
       </div>
       <form id="auth-form" class="auth-inline">
         <input type="email" id="email" placeholder="admin@example.com" required />
         <input type="password" id="password" placeholder="******" required minlength="6" />
         <button type="submit" id="sign-in-btn">Sign In</button>
-        <button type="button" id="create-user-btn" class="secondary">Create Trial User</button>
         <button type="button" id="sign-out-btn" class="danger" disabled>Sign Out</button>
       </form>
     </header>
 
     <div id="auth-gate" class="auth-gate">
       <h2>Login required</h2>
-      <p>Please sign in to access reports, clients, bulk SMS, and data manager.</p>
+      <p>Please sign in to continue.</p>
     </div>
     <div id="toast" class="toast hidden"></div>
 
@@ -69,14 +68,21 @@
                 <label>Frequency
                   <select id="schedule-frequency"><option value="daily">Daily</option><option value="weekly">Weekly</option></select>
                 </label>
-                <label>Target Channel
-                  <select id="schedule-channel"><option value="email">Email</option><option value="slack">Slack</option></select>
+                <label>Delivery Target
+                  <select id="schedule-channel"><option value="sheet">Google Sheet (Apps Script)</option></select>
                 </label>
               </div>
-              <label>Destination (email or webhook URL)<input id="schedule-destination" type="text" placeholder="ops@wesomo.org or https://hooks.slack.com/..." /></label>
+              <label>Apps Script Web App URL<input id="schedule-destination" type="text" placeholder="https://script.google.com/macros/s/.../exec" /></label>
+              <label>Google Sheet ID<input id="schedule-sheet-id" type="text" placeholder="1AbCdEf..." /></label>
               <button type="submit" id="save-schedule-btn" class="secondary" disabled>Save Schedule</button>
             </form>
             <div id="schedule-list"></div>
+            <h4>Apps Script (Web App Receiver)</h4>
+            <p class="hint">Deploy this script as a Web App. It receives dashboard schedule messages and writes them into a sheet tab named <strong>Queue</strong>.</p>
+            <pre id="apps-script-receiver" class="report-output"></pre>
+            <h4>Apps Script (Google Sheet Trigger)</h4>
+            <p class="hint">Paste this into the same sheet project, then run a time trigger on <strong>processQueue</strong> to process queued messages.</p>
+            <pre id="apps-script-trigger" class="report-output"></pre>
           </div>
           <div class="card"><h3>Summary Report</h3><pre id="reports-summary" class="report-output">Run reports to see output.</pre></div>
           <div class="card"><h3>Fund Use Report</h3><pre id="reports-fund-use" class="report-output">Run reports to see output.</pre></div>
@@ -135,7 +141,8 @@
               <label>Message<textarea id="sms-message" rows="4" maxlength="320" placeholder="Write SMS content" required></textarea></label>
               <label>Recipient Source
                 <select id="recipient-source">
-                  <option value="clients">All clients in Firestore</option>
+                  <option value="clients">All clients</option>
+                  <option value="selected">Choose clients from list</option>
                   <option value="manual">Manual comma-separated numbers</option>
                 </select>
               </label>
@@ -147,6 +154,19 @@
                 <label>Quiet hours (HH:MM-HH:MM)<input id="quiet-hours" type="text" placeholder="21:00-06:00" /></label>
               </div>
               <label id="manual-numbers-wrap" class="hidden">Manual Phone Numbers<textarea id="manual-numbers" rows="3" placeholder="+233xxxx,+233yyyy"></textarea></label>
+              <div id="select-clients-wrap" class="hidden">
+                <div class="split-3">
+                  <label>Find client<input id="sms-client-search" type="text" placeholder="Search by name, phone, or email" /></label>
+                  <label>Status
+                    <select id="sms-client-status"><option value="all">All</option><option value="active">Active only</option><option value="deleted">Archived only</option></select>
+                  </label>
+                  <label>Program
+                    <input id="sms-client-program" type="text" placeholder="Leave blank for all" />
+                  </label>
+                </div>
+                <button type="button" class="secondary" id="sms-select-visible-btn">Select all shown</button>
+                <div id="sms-client-picker" class="picker-list"></div>
+              </div>
               <div class="actions">
                 <button type="button" id="preview-recipients-btn" disabled>Preview Recipients</button>
                 <button type="submit" id="save-campaign-btn" disabled>Save Campaign Draft</button>
@@ -160,7 +180,7 @@
         <section class="page" id="data-page">
           <div class="card" id="data-card">
             <div class="row">
-              <h2>Collection Manager</h2>
+              <h2>Data Records</h2>
               <select id="collection-select" disabled>
                 <option value="donations">donations</option><option value="adminAuditLogs">adminAuditLogs</option><option value="adminRecords">adminRecords</option><option value="beneficiaryActivities">beneficiaryActivities</option><option value="beneficiaries">beneficiaries</option><option value="disbursements">disbursements</option><option value="clients">clients</option><option value="bulkSmsCampaigns">bulkSmsCampaigns</option>
               </select>
