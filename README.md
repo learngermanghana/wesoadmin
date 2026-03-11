@@ -47,8 +47,16 @@ A Vercel-hosted admin dashboard that uses Firebase for authentication and Firest
 
 ## Setup
 
-1. Put real Firebase web config values in `web/firebase-config.js`.
-2. Deploy frontend to Vercel from the project root:
+1. Configure Firebase web values in Vercel project environment variables:
+   - `FIREBASE_API_KEY`
+   - `FIREBASE_AUTH_DOMAIN`
+   - `FIREBASE_PROJECT_ID`
+   - `FIREBASE_STORAGE_BUCKET`
+   - `FIREBASE_MESSAGING_SENDER_ID`
+   - `FIREBASE_APP_ID`
+   The app loads these at runtime from `/api/runtime-config`.
+2. (Optional local fallback) You can still set hardcoded values in `web/firebase-config.js` for non-Vercel testing.
+3. Deploy frontend to Vercel from the project root:
 
    ```bash
    vercel login
@@ -56,7 +64,7 @@ A Vercel-hosted admin dashboard that uses Firebase for authentication and Firest
    vercel --prod
    ```
 
-3. Deploy Firestore rules separately with Firebase CLI (backend only):
+4. Deploy Firestore rules separately with Firebase CLI (backend only):
 
    ```bash
    firebase login
