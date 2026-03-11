@@ -26,6 +26,7 @@
       <h2>Login required</h2>
       <p>Please sign in to access reports, clients, bulk SMS, and data manager.</p>
     </div>
+    <div id="toast" class="toast hidden"></div>
 
     <div id="admin-shell" class="hidden-by-auth">
       <nav class="page-nav">
@@ -60,10 +61,30 @@
               </div>
             </form>
           </div>
+          <div class="card">
+            <h3>Report Scheduling</h3>
+            <form id="schedule-form">
+              <div class="split-3">
+                <label>Name <input id="schedule-name" type="text" placeholder="Weekly program digest" required /></label>
+                <label>Frequency
+                  <select id="schedule-frequency"><option value="daily">Daily</option><option value="weekly">Weekly</option></select>
+                </label>
+                <label>Target Channel
+                  <select id="schedule-channel"><option value="email">Email</option><option value="slack">Slack</option></select>
+                </label>
+              </div>
+              <label>Destination (email or webhook URL)<input id="schedule-destination" type="text" placeholder="ops@wesomo.org or https://hooks.slack.com/..." /></label>
+              <button type="submit" id="save-schedule-btn" class="secondary" disabled>Save Schedule</button>
+            </form>
+            <div id="schedule-list"></div>
+          </div>
           <div class="card"><h3>Summary Report</h3><pre id="reports-summary" class="report-output">Run reports to see output.</pre></div>
           <div class="card"><h3>Fund Use Report</h3><pre id="reports-fund-use" class="report-output">Run reports to see output.</pre></div>
           <div class="card"><h3>Beneficiaries Report</h3><pre id="reports-beneficiaries" class="report-output">Run reports to see output.</pre></div>
           <div class="card"><h3>Export Payload</h3><pre id="reports-export" class="report-output">Click "Build Export Payload" to generate data.</pre></div>
+          <div class="card"><h3>Trend: Weekly/Monthly Disbursements</h3><canvas id="disbursement-trend-chart" width="640" height="260"></canvas></div>
+          <div class="card"><h3>Trend: Beneficiary Growth</h3><canvas id="beneficiary-growth-chart" width="640" height="260"></canvas></div>
+          <div class="card"><h3>Health Dashboard</h3><p id="health-dashboard" class="hint">No metrics loaded yet.</p></div>
         </section>
 
         <section class="page" id="clients-page">
@@ -86,10 +107,12 @@
                 <label class="file-label">Import CSV<input type="file" id="import-clients-input" accept=".csv" /></label>
               </div>
             </form>
+            <div id="client-import-preview" class="hint"></div>
+            <button id="confirm-client-import-btn" class="secondary" disabled>Confirm Client Import</button>
           </div>
           <div class="card">
             <h2>Clients List</h2>
-            <div class="actions">
+            <div class="actions sticky-filters">
               <input id="client-search" type="text" placeholder="Search clients" />
               <select id="client-filter">
                 <option value="all">All</option>
@@ -116,6 +139,13 @@
                   <option value="manual">Manual comma-separated numbers</option>
                 </select>
               </label>
+              <div class="split-3">
+                <label>Segmentation
+                  <select id="recipient-segment"><option value="all">All clients</option><option value="active">Active only</option><option value="program">By program</option></select>
+                </label>
+                <label>Program for segment<input id="segment-program" type="text" placeholder="oncology-support" /></label>
+                <label>Quiet hours (HH:MM-HH:MM)<input id="quiet-hours" type="text" placeholder="21:00-06:00" /></label>
+              </div>
               <label id="manual-numbers-wrap" class="hidden">Manual Phone Numbers<textarea id="manual-numbers" rows="3" placeholder="+233xxxx,+233yyyy"></textarea></label>
               <div class="actions">
                 <button type="button" id="preview-recipients-btn" disabled>Preview Recipients</button>
@@ -138,7 +168,9 @@
               <button id="export-disbursements-btn" class="secondary" disabled>Export Disbursements CSV</button>
               <label class="file-label">Import Disbursements CSV<input type="file" id="import-disbursements-input" accept=".csv" /></label>
             </div>
-            <div class="actions">
+            <div id="disbursement-import-preview" class="hint"></div>
+            <button id="confirm-disbursement-import-btn" class="secondary" disabled>Confirm Disbursement Import</button>
+            <div class="actions sticky-filters">
               <input id="data-search" type="text" placeholder="Search documents" />
               <select id="data-filter"><option value="all">All</option><option value="active">Active only</option><option value="deleted">Archived only</option></select>
               <button type="button" class="secondary" id="data-prev-page">Prev</button>
@@ -150,6 +182,7 @@
 
           <div class="card" id="editor-card">
             <h2>Create / Update Document</h2>
+            <p class="hint">Paste valid JSON only. Example: {"amount":10,"program":"direct-support"}. Fields like createdAt/updatedAt are set automatically.</p>
             <form id="doc-form">
               <label>Document ID (leave empty to auto-generate)<input type="text" id="doc-id" placeholder="example123" /></label>
               <label>JSON Data<textarea id="doc-json" rows="10" placeholder='{"amount":10,"program":"direct-support"}' required></textarea></label>

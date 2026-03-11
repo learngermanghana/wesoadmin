@@ -43,7 +43,6 @@ body {
   margin-top: 0;
 }
 
-
 .auth-gate {
   margin: 1rem;
   background: #fff;
@@ -52,7 +51,8 @@ body {
   padding: 1rem;
 }
 
-.hidden-by-auth {
+.hidden-by-auth,
+.hidden {
   display: none;
 }
 
@@ -123,6 +123,14 @@ button {
   flex-wrap: wrap;
 }
 
+.sticky-filters {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 1;
+  padding-bottom: 0.4rem;
+}
+
 .split-2 > label,
 .split-3 > label {
   flex: 1;
@@ -177,10 +185,6 @@ button:disabled {
   overflow-x: auto;
 }
 
-.hidden {
-  display: none;
-}
-
 .file-label {
   display: inline-flex;
   align-items: center;
@@ -192,4 +196,22 @@ button:disabled {
 
 .file-label input {
   margin-top: 0;
+}
+
+canvas {
+  width: 100%;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.toast {
+  position: fixed;
+  right: 16px;
+  top: 16px;
+  z-index: 999;
+  background: #0f766e;
+  color: #fff;
+  padding: 0.8rem 1rem;
+  border-radius: 10px;
 }
