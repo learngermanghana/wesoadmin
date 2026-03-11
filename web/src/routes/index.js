@@ -1,14 +1,10 @@
 const ROUTES = {
-  "reports-page": "/dashboard",
-  "clients-page": "/reports-overview",
+  "reports-page": "/overview",
   "bulk-sms-page": "/funds-use",
   "data-page": "/beneficiaries",
   "donations-page": "/donations",
-  "programs-page": "/programs",
-  "outreach-page": "/outreach",
   "exports-page": "/exports",
-  "audit-log-page": "/audit-log",
-  "settings-page": "/settings"
+  "audit-log-page": "/audit-log"
 };
 
 const FALLBACK_PAGE = "reports-page";
