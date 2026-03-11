@@ -36,9 +36,18 @@ A Vercel-hosted admin dashboard that uses Firebase for authentication and Firest
 - All dashboard content is hidden until an authenticated user signs in.
 - Testing-first Firestore rules: any authenticated user can read/write.
 
+
+## Repository structure
+
+- `web/`: frontend application.
+  - `web/src/components/`: reusable browser-side components and utilities.
+  - `web/src/routes/`: page route/tab switching logic.
+- `web/api/`: frontend API communication configuration (report endpoint resolution).
+- `functions/`: Firebase Cloud Functions backend deployed to the cloud.
+
 ## Setup
 
-1. Put real Firebase web config values in `public/firebase-config.js`.
+1. Put real Firebase web config values in `web/firebase-config.js`.
 2. Deploy frontend to Vercel from the project root:
 
    ```bash
@@ -63,7 +72,7 @@ A Vercel-hosted admin dashboard that uses Firebase for authentication and Firest
 
 ## Notes
 
-- Frontend hosting is expected on Vercel (`vercel.json` sets `public/` as output).
+- Frontend hosting is expected on Vercel (`vercel.json` sets `web/` as output).
 - Firebase is used for Auth + Firestore backend access.
 - This setup is intentionally permissive for testing.
 - Before production, tighten `firestore.rules` and disable open trial account creation from UI.
