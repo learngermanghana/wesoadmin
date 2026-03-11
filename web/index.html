@@ -29,16 +29,22 @@
 
     <div id="admin-shell" class="hidden-by-auth">
       <nav class="page-nav">
-        <button class="tab-btn active" data-page="reports-page">Audit Reports</button>
-        <button class="tab-btn" data-page="clients-page">Clients</button>
-        <button class="tab-btn" data-page="bulk-sms-page">Bulk SMS</button>
-        <button class="tab-btn" data-page="data-page">Data Manager</button>
+        <button class="tab-btn active" data-page="reports-page">Dashboard</button>
+        <button class="tab-btn" data-page="clients-page">Reports Overview</button>
+        <button class="tab-btn" data-page="bulk-sms-page">Funds Use</button>
+        <button class="tab-btn" data-page="data-page">Beneficiaries</button>
+        <button class="tab-btn" data-page="donations-page">Donations</button>
+        <button class="tab-btn" data-page="programs-page">Programs</button>
+        <button class="tab-btn" data-page="outreach-page">Outreach</button>
+        <button class="tab-btn" data-page="exports-page">Exports</button>
+        <button class="tab-btn" data-page="audit-log-page">Audit Log</button>
+        <button class="tab-btn" data-page="settings-page">Settings</button>
       </nav>
 
       <main>
         <section class="page active" id="reports-page">
           <div class="card">
-            <h2>Audit & Program Reports</h2>
+            <h2>Dashboard Overview</h2>
             <form id="reports-form">
               <div class="split-3">
                 <label>Start Date <input type="date" id="report-start-date" required /></label>
@@ -213,6 +219,49 @@
             </form>
           </div>
         </section>
+
+        <section class="page" id="donations-page">
+          <div class="card">
+            <h2>Donations</h2>
+            <p class="hint">Track incoming donations and monitor contribution trends.</p>
+          </div>
+        </section>
+
+        <section class="page" id="programs-page">
+          <div class="card">
+            <h2>Programs</h2>
+            <p class="hint">Manage and monitor charity program activity.</p>
+          </div>
+        </section>
+
+        <section class="page" id="outreach-page">
+          <div class="card">
+            <h2>Outreach</h2>
+            <p class="hint">Coordinate outreach initiatives and communication campaigns.</p>
+          </div>
+        </section>
+
+        <section class="page" id="exports-page">
+          <div class="card">
+            <h2>Exports</h2>
+            <p class="hint">Generate and download data exports for reporting and compliance.</p>
+          </div>
+        </section>
+
+        <section class="page" id="audit-log-page">
+          <div class="card">
+            <h2>Audit Log</h2>
+            <p class="hint">Review administrative activity and change history.</p>
+          </div>
+        </section>
+
+        <section class="page" id="settings-page">
+          <div class="card">
+            <h2>Settings</h2>
+            <p class="hint">Configure dashboard defaults and administrative preferences.</p>
+          </div>
+        </section>
+
       </main>
     </div>
 
