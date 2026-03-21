@@ -30,6 +30,7 @@
     <div id="admin-shell" class="hidden-by-auth">
       <nav class="page-nav">
         <button class="tab-btn active" data-page="reports-page">Overview</button>
+        <button class="tab-btn" data-page="makeup-school-page">Make Up &amp; More School</button>
         <button class="tab-btn" data-page="bulk-sms-page">Funds Use</button>
         <button class="tab-btn" data-page="data-page">Beneficiaries</button>
         <button class="tab-btn" data-page="donations-page">Donations</button>
@@ -92,6 +93,87 @@
             <canvas id="disbursement-trend-chart" width="640" height="260"></canvas>
             <canvas id="beneficiary-growth-chart" width="640" height="260"></canvas>
             <p id="health-dashboard" class="hint"></p>
+          </div>
+        </section>
+
+        <section class="page" id="makeup-school-page">
+          <div class="card">
+            <h2>Registration Approvals</h2>
+            <p class="hint">Pulling from Firestore collection <code>registrations</code>. Approve each student and track payment details.</p>
+            <div class="actions">
+              <button type="button" id="load-registrations-btn" class="secondary" disabled>Load Registrations</button>
+            </div>
+            <div id="upcoming-registrations-list"></div>
+          </div>
+
+          <div class="card">
+            <h2>Student Payment Update</h2>
+            <form id="registration-payment-form">
+              <label>Registration Document ID
+                <input type="text" id="registration-doc-id" placeholder="Paste ID from list" required />
+              </label>
+              <div class="split-3">
+                <label>Status
+                  <select id="registration-status">
+                    <option value="approved">Approved</option>
+                    <option value="pending">Pending</option>
+                  </select>
+                </label>
+                <label>Payment State
+                  <select id="registration-payment-state">
+                    <option value="pending">Pending</option>
+                    <option value="paid">Paid</option>
+                  </select>
+                </label>
+                <label>Payment Method
+                  <select id="registration-payment-method">
+                    <option value="cash">Cash</option>
+                    <option value="mobile_money">Mobile Money</option>
+                    <option value="card">Card</option>
+                    <option value="bank_transfer">Bank Transfer</option>
+                  </select>
+                </label>
+              </div>
+              <label>Amount
+                <input type="number" id="registration-amount" min="0" step="0.01" placeholder="0.00" required />
+              </label>
+              <button type="submit" id="save-registration-payment-btn" disabled>Save Payment &amp; Approval</button>
+            </form>
+          </div>
+
+          <div class="card">
+            <h2>Receipt Generator</h2>
+            <form id="receipt-form">
+              <label>Student Name
+                <input type="text" id="receipt-student-name" placeholder="Student full name" required />
+              </label>
+              <div class="split-2">
+                <label>Email
+                  <input type="email" id="receipt-email" placeholder="parent@example.com" />
+                </label>
+                <label>Phone (WhatsApp)
+                  <input type="text" id="receipt-phone" placeholder="+233xxxxxxxxx" />
+                </label>
+              </div>
+              <div class="split-3">
+                <label>Amount
+                  <input type="number" id="receipt-amount" min="0" step="0.01" placeholder="0.00" required />
+                </label>
+                <label>Payment Method
+                  <input type="text" id="receipt-payment-method" placeholder="Cash / Mobile Money / Card" required />
+                </label>
+                <label>Receipt Number
+                  <input type="text" id="receipt-number" placeholder="auto-generated if empty" />
+                </label>
+              </div>
+              <div class="actions">
+                <button type="submit" id="generate-receipt-btn" disabled>Generate Receipt</button>
+                <button type="button" id="download-receipt-pdf-btn" class="secondary" disabled>Download Receipt PDF</button>
+                <a id="receipt-whatsapp-link" class="button-link disabled" href="#" target="_blank" rel="noopener noreferrer">Open WhatsApp</a>
+                <a id="receipt-email-link" class="button-link disabled" href="#">Open Email</a>
+              </div>
+            </form>
+            <pre id="receipt-preview" class="report-output">Generate a receipt to preview details.</pre>
           </div>
         </section>
 

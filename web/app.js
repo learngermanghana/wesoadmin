@@ -85,6 +85,27 @@ const appsScriptReceiver = $("apps-script-receiver");
 const appsScriptTrigger = $("apps-script-trigger");
 const healthDashboard = $("health-dashboard");
 const refreshDashboardBtn = $("refresh-dashboard-btn");
+const loadRegistrationsBtn = $("load-registrations-btn");
+const upcomingRegistrationsList = $("upcoming-registrations-list");
+const registrationPaymentForm = $("registration-payment-form");
+const registrationDocIdInput = $("registration-doc-id");
+const registrationStatusInput = $("registration-status");
+const registrationPaymentStateInput = $("registration-payment-state");
+const registrationPaymentMethodInput = $("registration-payment-method");
+const registrationAmountInput = $("registration-amount");
+const saveRegistrationPaymentBtn = $("save-registration-payment-btn");
+const receiptForm = $("receipt-form");
+const receiptStudentNameInput = $("receipt-student-name");
+const receiptEmailInput = $("receipt-email");
+const receiptPhoneInput = $("receipt-phone");
+const receiptAmountInput = $("receipt-amount");
+const receiptPaymentMethodInput = $("receipt-payment-method");
+const receiptNumberInput = $("receipt-number");
+const generateReceiptBtn = $("generate-receipt-btn");
+const downloadReceiptPdfBtn = $("download-receipt-pdf-btn");
+const receiptPreview = $("receipt-preview");
+const receiptWhatsappLink = $("receipt-whatsapp-link");
+const receiptEmailLink = $("receipt-email-link");
 const dashboardDisbursements = $("dashboard-disbursements");
 const dashboardBeneficiaries = $("dashboard-beneficiaries");
 const dashboardDonations = $("dashboard-donations");
@@ -160,6 +181,8 @@ let lastExportPayload = null;
 let pendingClientImport = [];
 let pendingDisbursementImport = [];
 let selectedSmsClientIds = new Set();
+let registrationsCache = [];
+let lastGeneratedReceipt = null;
 
 if (window.Sentry && window.WESO_SENTRY_DSN) {
   window.Sentry.init({ dsn: window.WESO_SENTRY_DSN, environment: ENV });
@@ -213,6 +236,10 @@ function setSignedInState(signedIn) {
   [
     signOutBtn,
     refreshDashboardBtn,
+    loadRegistrationsBtn,
+    saveRegistrationPaymentBtn,
+    generateReceiptBtn,
+    downloadReceiptPdfBtn,
     saveBtn,
     loadBtn,
     collectionSelect,
@@ -701,6 +728,122 @@ async function refreshDashboardOverview() {
     : '<p class="hint">No activity records yet.</p>';
 }
 
+function parseRegistrationDate(entry) {
+  const dateValue = entry.registrationDate || entry.startDate || entry.classDate || entry.eventDate || null;
+  if (!dateValue) return null;
+  const parsed = new Date(dateValue);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function renderRegistrations() {
+  if (!upcomingRegistrationsList) return;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const upcoming = registrationsCache
+    .map((item) => ({ ...item, parsedDate: parseRegistrationDate(item) }))
+    .filter((item) => !item.parsedDate || item.parsedDate >= today)
+    .sort((a, b) => {
+      if (!a.parsedDate && !b.parsedDate) return 0;
+      if (!a.parsedDate) return 1;
+      if (!b.parsedDate) return -1;
+      return a.parsedDate - b.parsedDate;
+    });
+  upcomingRegistrationsList.innerHTML = upcoming.length ? "" : '<p class="hint">No upcoming registrations found.</p>';
+  upcoming.forEach((entry) => {
+    const amount = Number(entry.amount || entry.paymentAmount || 0);
+    const card = document.createElement("div");
+    card.className = "doc-item";
+    card.innerHTML = `
+      <h3>${entry.fullName || entry.studentName || "Unnamed Student"}</h3>
+      <p><strong>Registration ID:</strong> ${entry.id}</p>
+      <p><strong>Date:</strong> ${entry.parsedDate ? entry.parsedDate.toLocaleDateString() : "Not provided"}</p>
+      <p><strong>Status:</strong> ${entry.status || "pending"} | <strong>Payment:</strong> ${entry.paymentState || "pending"}</p>
+      <p><strong>Amount:</strong> ${amount.toFixed(2)} | <strong>Method:</strong> ${entry.paymentMethod || "-"}</p>
+    `;
+    const actions = document.createElement("div");
+    actions.className = "doc-actions";
+    const approveBtn = Object.assign(document.createElement("button"), { textContent: "Use in Payment Form", className: "secondary" });
+    approveBtn.onclick = () => {
+      registrationDocIdInput.value = entry.id;
+      registrationStatusInput.value = entry.status || "approved";
+      registrationPaymentStateInput.value = entry.paymentState || "pending";
+      registrationPaymentMethodInput.value = entry.paymentMethod || "cash";
+      registrationAmountInput.value = String(amount || "");
+      receiptStudentNameInput.value = entry.fullName || entry.studentName || "";
+      receiptEmailInput.value = entry.email || entry.parentEmail || "";
+      receiptPhoneInput.value = entry.phone || entry.parentPhone || "";
+      receiptAmountInput.value = String(amount || "");
+      receiptPaymentMethodInput.value = entry.paymentMethod || "";
+      receiptNumberInput.value = entry.receiptNumber || "";
+      toastMessage("Registration loaded into payment + receipt forms.");
+    };
+    actions.append(approveBtn);
+    card.append(actions);
+    upcomingRegistrationsList.append(card);
+  });
+}
+
+async function loadRegistrations() {
+  if (!currentUser) return;
+  setLoading(loadRegistrationsBtn, true, "Load Registrations", "Loading...");
+  try {
+    const snapshot = await getDocs(collection(db, "registrations"));
+    registrationsCache = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+    renderRegistrations();
+    toastMessage("Registrations loaded.");
+  } finally {
+    setLoading(loadRegistrationsBtn, false, "Load Registrations");
+    loadRegistrationsBtn.disabled = !currentUser;
+  }
+}
+
+function buildReceiptPayload() {
+  const amount = Number(receiptAmountInput.value || 0);
+  if (!receiptStudentNameInput.value.trim()) throw new Error("Student name is required.");
+  if (!amount) throw new Error("Receipt amount is required.");
+  if (!receiptPaymentMethodInput.value.trim()) throw new Error("Payment method is required.");
+  const receiptNumber = receiptNumberInput.value.trim() || `RCPT-${Date.now()}`;
+  return {
+    receiptNumber,
+    studentName: receiptStudentNameInput.value.trim(),
+    email: receiptEmailInput.value.trim(),
+    phone: receiptPhoneInput.value.trim(),
+    amount,
+    paymentMethod: receiptPaymentMethodInput.value.trim(),
+    issuedAt: new Date().toISOString()
+  };
+}
+
+function renderReceipt(payload) {
+  const lines = [
+    "Make Up & More School",
+    `Receipt #: ${payload.receiptNumber}`,
+    `Student: ${payload.studentName}`,
+    `Amount: ${payload.amount.toFixed(2)}`,
+    `Payment Method: ${payload.paymentMethod}`,
+    `Issued: ${new Date(payload.issuedAt).toLocaleString()}`
+  ];
+  receiptPreview.textContent = lines.join("\n");
+  const message = encodeURIComponent(
+    `Hello, your payment has been received.\nReceipt: ${payload.receiptNumber}\nStudent: ${payload.studentName}\nAmount: ${payload.amount.toFixed(2)}\nMethod: ${payload.paymentMethod}`
+  );
+  const digits = payload.phone.replace(/[^\d]/g, "");
+  if (digits) {
+    receiptWhatsappLink.href = `https://wa.me/${digits}?text=${message}`;
+    receiptWhatsappLink.classList.remove("disabled");
+  } else {
+    receiptWhatsappLink.href = "#";
+    receiptWhatsappLink.classList.add("disabled");
+  }
+  if (payload.email) {
+    receiptEmailLink.href = `mailto:${encodeURIComponent(payload.email)}?subject=${encodeURIComponent(`Payment Receipt ${payload.receiptNumber}`)}&body=${message}`;
+    receiptEmailLink.classList.remove("disabled");
+  } else {
+    receiptEmailLink.href = "#";
+    receiptEmailLink.classList.add("disabled");
+  }
+}
+
 authForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   try {
@@ -714,6 +857,7 @@ signOutBtn.addEventListener("click", async () => {
   await signOut(auth);
   docsList.innerHTML = "";
   clientsList.innerHTML = "";
+  if (upcomingRegistrationsList) upcomingRegistrationsList.innerHTML = "";
   showMessage("Signed out.");
 });
 if (refreshDashboardBtn) {
@@ -724,6 +868,76 @@ if (refreshDashboardBtn) {
     } catch (error) {
       showMessage(`Dashboard refresh failed: ${error.message}`);
     }
+  });
+}
+if (loadRegistrationsBtn) {
+  loadRegistrationsBtn.addEventListener("click", async () => {
+    try {
+      await loadRegistrations();
+    } catch (error) {
+      showMessage(`Could not load registrations: ${error.message}`);
+    }
+  });
+}
+if (registrationPaymentForm) {
+  registrationPaymentForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!currentUser) return;
+    const registrationId = registrationDocIdInput.value.trim();
+    if (!registrationId) return showMessage("Registration document ID is required.");
+    const amount = Number(registrationAmountInput.value || 0);
+    try {
+      const payload = {
+        status: registrationStatusInput.value,
+        paymentState: registrationPaymentStateInput.value,
+        paymentMethod: registrationPaymentMethodInput.value,
+        amount,
+        paymentUpdatedAt: serverTimestamp(),
+        paymentUpdatedBy: currentUser.email || currentUser.uid
+      };
+      await setDoc(doc(db, "registrations", registrationId), payload, { merge: true });
+      if (registrationPaymentStateInput.value === "paid") {
+        await setDoc(
+          doc(db, "students", registrationId),
+          {
+            studentName: receiptStudentNameInput.value.trim() || "Student",
+            email: receiptEmailInput.value.trim() || "",
+            phone: receiptPhoneInput.value.trim() || "",
+            registrationId,
+            amountPaid: amount,
+            paymentMethod: registrationPaymentMethodInput.value,
+            paidAt: serverTimestamp(),
+            updatedBy: currentUser.email || currentUser.uid
+          },
+          { merge: true }
+        );
+      }
+      await logEvent("registration_payment_saved", { registrationId, paymentState: registrationPaymentStateInput.value, amount });
+      await loadRegistrations();
+      toastMessage("Registration payment saved.");
+    } catch (error) {
+      showMessage(`Could not save payment: ${error.message}`);
+    }
+  });
+}
+if (receiptForm) {
+  receiptForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    try {
+      lastGeneratedReceipt = buildReceiptPayload();
+      renderReceipt(lastGeneratedReceipt);
+      downloadReceiptPdfBtn.disabled = false;
+      toastMessage("Receipt generated.");
+    } catch (error) {
+      showMessage(`Could not generate receipt: ${error.message}`);
+    }
+  });
+}
+if (downloadReceiptPdfBtn) {
+  downloadReceiptPdfBtn.addEventListener("click", () => {
+    if (!lastGeneratedReceipt) return showMessage("Generate a receipt first.");
+    const lines = receiptPreview.textContent.split("\n");
+    downloadBlob(`receipt-${lastGeneratedReceipt.receiptNumber}.pdf`, createSimplePdfBlob("Payment Receipt", lines));
   });
 }
 reportsForm.addEventListener("submit", async (event) => {
@@ -1003,6 +1217,6 @@ onAuthStateChanged(auth, async (user) => {
     reportPresetSelect.innerHTML = '<option value="">Select preset</option>' + presets.map((p, i) => `<option value="${i}">${p.name}</option>`).join("");
     renderSchedules();
     applyRoute(tabButtons, pages);
-    await Promise.all([loadClients(), loadCampaigns(), loadHealthMetrics(), refreshDashboardOverview()]);
+    await Promise.all([loadClients(), loadCampaigns(), loadHealthMetrics(), refreshDashboardOverview(), loadRegistrations()]);
   } else showMessage("Not signed in.");
 });
