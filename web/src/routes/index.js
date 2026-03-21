@@ -1,7 +1,6 @@
 const ROUTES = {
   "reports-page": "/overview",
   "bulk-sms-page": "/funds-use",
-  "data-page": "/beneficiaries",
   "donations-page": "/donations",
   "exports-page": "/exports",
   "audit-log-page": "/audit-log"
