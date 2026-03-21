@@ -12,19 +12,15 @@ import {
   doc,
   setDoc,
   addDoc,
-  query,
-  where,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 import {
   validateClient,
-  dedupeRecipients,
   paginate,
   toCsv,
   parseCsv,
-  createSimplePdfBlob,
-  CLIENT_CONSTRAINTS
+  createSimplePdfBlob
 } from "./src/components/utils.js";
 import { resolveReportEndpoints } from "./api/report-endpoints.js";
 import { bindPageRoutes, switchPage, applyRoute } from "./src/routes/index.js";
@@ -88,13 +84,7 @@ const healthDashboard = $("health-dashboard");
 const refreshDashboardBtn = $("refresh-dashboard-btn");
 const loadRegistrationsBtn = $("load-registrations-btn");
 const upcomingRegistrationsList = $("upcoming-registrations-list");
-const registrationPaymentForm = $("registration-payment-form");
-const registrationDocIdInput = $("registration-doc-id");
-const registrationStatusInput = $("registration-status");
-const registrationPaymentStateInput = $("registration-payment-state");
-const registrationPaymentMethodInput = $("registration-payment-method");
-const registrationAmountInput = $("registration-amount");
-const saveRegistrationPaymentBtn = $("save-registration-payment-btn");
+const approvedStudentsList = $("approved-students-list");
 const receiptForm = $("receipt-form");
 const receiptStudentNameInput = $("receipt-student-name");
 const receiptEmailInput = $("receipt-email");
@@ -113,7 +103,6 @@ const dashboardDonations = $("dashboard-donations");
 const dashboardExports = $("dashboard-exports");
 const dashboardAudit = $("dashboard-audit");
 const dashboardLastUpdated = $("dashboard-last-updated");
-const dashboardActivityList = $("dashboard-activity-list");
 const clientForm = $("client-form");
 const clientIdInput = $("client-id");
 const clientNameInput = $("client-name");
@@ -138,19 +127,10 @@ const confirmClientImportBtn = $("confirm-client-import-btn");
 const smsForm = $("sms-form");
 const campaignNameInput = $("campaign-name");
 const smsMessageInput = $("sms-message");
-const recipientSource = $("recipient-source");
-const recipientSegment = $("recipient-segment");
-const segmentProgramInput = $("segment-program");
-const quietHoursInput = $("quiet-hours");
-const manualNumbersWrap = $("manual-numbers-wrap");
-const manualNumbersInput = $("manual-numbers");
-const selectClientsWrap = $("select-clients-wrap");
-const smsClientSearchInput = $("sms-client-search");
-const smsClientStatusInput = $("sms-client-status");
-const smsClientProgramInput = $("sms-client-program");
-const smsSelectVisibleBtn = $("sms-select-visible-btn");
-const smsClientPicker = $("sms-client-picker");
-const previewRecipientsBtn = $("preview-recipients-btn");
+const fundUseAmountInput = $("fund-use-amount");
+const fundUseDateInput = $("fund-use-date");
+const fundUseCategoryInput = $("fund-use-category");
+const fundUseProgramInput = $("fund-use-program");
 const saveCampaignBtn = $("save-campaign-btn");
 const smsRecipientPreview = $("sms-recipient-preview");
 const campaignsList = $("campaigns-list");
@@ -184,8 +164,8 @@ let dataPage = 1;
 let lastExportPayload = null;
 let pendingClientImport = [];
 let pendingDisbursementImport = [];
-let selectedSmsClientIds = new Set();
 let registrationsCache = [];
+let studentsCache = [];
 let lastGeneratedReceipt = null;
 let currentInterface = "ngo";
 
@@ -242,7 +222,6 @@ function setSignedInState(signedIn) {
     signOutBtn,
     refreshDashboardBtn,
     loadRegistrationsBtn,
-    saveRegistrationPaymentBtn,
     generateReceiptBtn,
     downloadReceiptPdfBtn,
     saveBtn,
@@ -250,7 +229,6 @@ function setSignedInState(signedIn) {
     collectionSelect,
     saveClientBtn,
     loadClientsBtn,
-    previewRecipientsBtn,
     saveCampaignBtn,
     runReportsBtn,
     exportReportsBtn,
@@ -506,7 +484,6 @@ async function loadClients() {
   clientsCache = [];
   snapshot.forEach((snap) => clientsCache.push({ id: snap.id, ...snap.data() }));
   renderClients();
-  renderSmsClientPicker();
 }
 
 function renderDocs() {
@@ -566,114 +543,34 @@ async function loadDocuments() {
   }
 }
 
-function getManualRecipients() {
-  return manualNumbersInput.value
-    .split(",")
-    .map((v) => v.trim())
-    .filter(Boolean);
-}
-
-function getFilteredSmsClients() {
-  const text = smsClientSearchInput.value.trim().toLowerCase();
-  const status = smsClientStatusInput.value;
-  const program = smsClientProgramInput.value.trim().toLowerCase();
-  return clientsCache.filter((client) => {
-    const matchesText = !text || [client.name, client.email, client.phone].some((value) => String(value || "").toLowerCase().includes(text));
-    const matchesStatus = status === "all" || (status === "active" ? !client.isDeleted : !!client.isDeleted);
-    const matchesProgram = !program || String(client.program || "").toLowerCase().includes(program);
-    return matchesText && matchesStatus && matchesProgram;
-  });
-}
-
-function renderSmsClientPicker() {
-  if (!smsClientPicker) return;
-  const filtered = getFilteredSmsClients();
-  smsClientPicker.innerHTML = filtered.length ? "" : '<p class="hint">No matching clients.</p>';
-  filtered.forEach((client) => {
-    const row = document.createElement("label");
-    row.className = "picker-item";
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.checked = selectedSmsClientIds.has(client.id);
-    checkbox.addEventListener("change", () => {
-      if (checkbox.checked) selectedSmsClientIds.add(client.id);
-      else selectedSmsClientIds.delete(client.id);
-    });
-    const text = document.createElement("span");
-    text.textContent = `${client.name || "Unnamed"} • ${client.phone || "No phone"}`;
-    row.append(checkbox, text);
-    smsClientPicker.append(row);
-  });
-}
-
-async function getClientRecipientsWithOptOut(sourceMode = "clients") {
-  const segment = recipientSegment.value;
-  const segmentProgram = segmentProgramInput.value.trim();
-  const sourceQuery = segment === "active" ? query(collection(db, "clients"), where("isDeleted", "!=", true)) : collection(db, "clients");
-  const snapshot = await getDocs(sourceQuery);
-  const recipients = [];
-  const optOut = new Set();
-  snapshot.forEach((snap) => {
-    const d = snap.data();
-    if (sourceMode === "selected" && !selectedSmsClientIds.has(snap.id)) return;
-    if (segment === "program" && segmentProgram && d.program !== segmentProgram) return;
-    if (!d.phone) return;
-    const normalized = String(d.phone).trim();
-    recipients.push(normalized);
-    if (d.optOutSms) optOut.add(normalized);
-  });
-  return { recipients, optOut };
-}
-
-
 function renderCampaigns() {
-  campaignsList.innerHTML = campaignsCache.length ? "" : "<p>No campaigns yet.</p>";
-  const analytics = { total: campaignsCache.length, queued: 0, sent: 0, failed: 0, cost: 0 };
+  campaignsList.innerHTML = campaignsCache.length ? "" : "<p>No funds use records yet.</p>";
+  const analytics = { total: campaignsCache.length, amount: 0 };
   campaignsCache.forEach((campaign) => {
-    analytics[campaign.deliveryStatus || "queued"] = (analytics[campaign.deliveryStatus || "queued"] || 0) + 1;
-    analytics.cost += Number(campaign.costGhs || 0);
+    analytics.amount += Number(campaign.amount || 0);
     const item = document.createElement("div");
     item.className = "doc-item";
-    item.innerHTML = `<h3>${campaign.campaignName || campaign.id} ${campaign.isDeleted ? "(Archived)" : ""}</h3><p>Status: ${campaign.deliveryStatus || "queued"}</p><p>Recipients: ${campaign.recipientCount || 0}</p><p>Failures: ${campaign.failureReason || "-"}</p>`;
+    item.innerHTML = `<h3>${campaign.title || campaign.id} ${campaign.isDeleted ? "(Archived)" : ""}</h3><p><strong>Amount:</strong> GHS ${Number(campaign.amount || 0).toFixed(2)}</p><p><strong>Category:</strong> ${campaign.category || "-"}</p><p><strong>Date:</strong> ${campaign.dateUsed || "-"}</p><p><strong>Program:</strong> ${campaign.program || "-"}</p><p><strong>Notes:</strong> ${campaign.notes || "-"}</p>`;
     const actions = document.createElement("div");
     actions.className = "doc-actions";
-    const retryBtn = Object.assign(document.createElement("button"), { textContent: "Queue Retry", className: "secondary" });
-    retryBtn.onclick = async () => {
-      const retries = Number(campaign.retryCount || 0);
-      if (retries >= 3) return toastMessage("Retry cap reached (3).");
-      await setDoc(doc(db, "bulkSmsCampaigns", campaign.id), { retryQueued: true, retryQueuedAt: serverTimestamp(), retryCount: retries + 1, deliveryStatus: "queued" }, { merge: true });
-      await logEvent("sms_retry_queued", { campaignId: campaign.id, retryCount: retries + 1 });
-      await loadCampaigns();
-    };
-    const callbackBtn = Object.assign(document.createElement("button"), { textContent: "Mark Delivered", className: "secondary" });
-    callbackBtn.onclick = async () => {
-      await setDoc(doc(db, "bulkSmsCampaigns", campaign.id), { deliveryStatus: "sent", callbackAt: serverTimestamp() }, { merge: true });
-      await logEvent("sms_delivery_callback", { campaignId: campaign.id, status: "sent" });
-      await loadCampaigns();
-    };
-    const failBtn = Object.assign(document.createElement("button"), { textContent: "Mark Failed", className: "secondary" });
-    failBtn.onclick = async () => {
-      const reason = prompt("Failure reason (invalid_number/carrier_error/other)?") || "other";
-      await setDoc(doc(db, "bulkSmsCampaigns", campaign.id), { deliveryStatus: "failed", failureReason: reason, callbackAt: serverTimestamp() }, { merge: true });
-      await loadCampaigns();
-    };
     const deleteBtn = Object.assign(document.createElement("button"), { textContent: campaign.isDeleted ? "Restore" : "Archive", className: campaign.isDeleted ? "secondary" : "danger" });
     deleteBtn.onclick = async () => {
-      if (!confirm(`${campaign.isDeleted ? "Restore" : "Archive"} campaign?`)) return;
-      await setDoc(doc(db, "bulkSmsCampaigns", campaign.id), { isDeleted: !campaign.isDeleted, deletedAt: !campaign.isDeleted ? serverTimestamp() : null }, { merge: true });
+      if (!confirm(`${campaign.isDeleted ? "Restore" : "Archive"} funds record?`)) return;
+      await setDoc(doc(db, "disbursements", campaign.id), { isDeleted: !campaign.isDeleted, deletedAt: !campaign.isDeleted ? serverTimestamp() : null }, { merge: true });
       await loadCampaigns();
     };
-    actions.append(retryBtn, callbackBtn, failBtn, deleteBtn);
+    actions.append(deleteBtn);
     item.append(actions);
     campaignsList.append(item);
   });
-  campaignAnalytics.textContent = `Campaigns: ${analytics.total} | Queued: ${analytics.queued || 0} | Sent: ${analytics.sent || 0} | Failed: ${analytics.failed || 0} | Cost (GHS): ${analytics.cost.toFixed(2)}`;
+  campaignAnalytics.textContent = `Records: ${analytics.total} | Total Amount: GHS ${analytics.amount.toFixed(2)}`;
 }
 
 async function loadCampaigns() {
-  const snapshot = await getDocs(collection(db, "bulkSmsCampaigns"));
+  const snapshot = await getDocs(collection(db, "disbursements"));
   campaignsCache = [];
   snapshot.forEach((snap) => campaignsCache.push({ id: snap.id, ...snap.data() }));
+  campaignsCache.sort((a, b) => String(b.dateUsed || "").localeCompare(String(a.dateUsed || "")));
   renderCampaigns();
 }
 
@@ -733,35 +630,26 @@ async function loadHealthMetrics() {
   const logs = await getDocs(collection(db, "adminAuditLogs"));
   const reportRuns = logs.docs.filter((d) => d.data().type === "report_api_call").length;
   const activeUsers = new Set(logs.docs.map((d) => d.data().user)).size;
-  const queueBacklog = campaignsCache.filter((c) => c.deliveryStatus === "queued").length;
-  healthDashboard.textContent = `Daily active admins: ${activeUsers} | Report runs: ${reportRuns} | SMS queue backlog: ${queueBacklog}`;
+  const totalFundRecords = campaignsCache.length;
+  healthDashboard.textContent = `Daily active admins: ${activeUsers} | Report runs: ${reportRuns} | Funds records: ${totalFundRecords}`;
 }
 
 async function refreshDashboardOverview() {
-  if (!currentUser || !dashboardActivityList) return;
-  const [disbursementsSnap, beneficiariesSnap, donationsSnap, exportsSnap, auditSnap] = await Promise.all([
+  if (!currentUser) return;
+  const [disbursementsSnap, beneficiariesSnap, donationsSnap, exportsSnap, auditSnap, studentsSnap] = await Promise.all([
     getDocs(collection(db, "disbursements")),
     getDocs(collection(db, "beneficiaries")),
     getDocs(collection(db, "donations")),
     getDocs(collection(db, "exports")),
-    getDocs(collection(db, "adminAuditLogs"))
+    getDocs(collection(db, "adminAuditLogs")),
+    getDocs(collection(db, "students"))
   ]);
   if (dashboardDisbursements) dashboardDisbursements.textContent = String(disbursementsSnap.size);
-  if (dashboardBeneficiaries) dashboardBeneficiaries.textContent = String(beneficiariesSnap.size);
+  if (dashboardBeneficiaries) dashboardBeneficiaries.textContent = String(Math.max(beneficiariesSnap.size, studentsSnap.size));
   if (dashboardDonations) dashboardDonations.textContent = String(donationsSnap.size);
   if (dashboardExports) dashboardExports.textContent = String(exportsSnap.size);
   if (dashboardAudit) dashboardAudit.textContent = String(auditSnap.size);
   if (dashboardLastUpdated) dashboardLastUpdated.textContent = new Date().toLocaleString();
-
-  const recent = auditSnap.docs
-    .map((d) => ({ id: d.id, ...d.data() }))
-    .sort((a, b) => String(b.at || "").localeCompare(String(a.at || "")))
-    .slice(0, 6);
-  dashboardActivityList.innerHTML = recent.length
-    ? recent
-        .map((entry) => `<div class="doc-item"><strong>${entry.type || "activity"}</strong><p>${entry.user || "system"} · ${entry.at || "time unavailable"}</p></div>`)
-        .join("")
-    : '<p class="hint">No activity records yet.</p>';
 }
 
 function parseRegistrationDate(entry) {
@@ -773,49 +661,57 @@ function parseRegistrationDate(entry) {
 
 function renderRegistrations() {
   if (!upcomingRegistrationsList) return;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const upcoming = registrationsCache
+  const registrations = registrationsCache
     .map((item) => ({ ...item, parsedDate: parseRegistrationDate(item) }))
-    .filter((item) => !item.parsedDate || item.parsedDate >= today)
     .sort((a, b) => {
       if (!a.parsedDate && !b.parsedDate) return 0;
       if (!a.parsedDate) return 1;
       if (!b.parsedDate) return -1;
       return a.parsedDate - b.parsedDate;
     });
-  upcomingRegistrationsList.innerHTML = upcoming.length ? "" : '<p class="hint">No upcoming registrations found.</p>';
-  upcoming.forEach((entry) => {
+  upcomingRegistrationsList.innerHTML = registrations.length ? "" : '<p class="hint">No registrations found.</p>';
+  registrations.forEach((entry) => {
     const amount = Number(entry.amount || entry.paymentAmount || 0);
-    const card = document.createElement("div");
-    card.className = "doc-item";
-    card.innerHTML = `
-      <h3>${entry.fullName || entry.studentName || "Unnamed Student"}</h3>
-      <p><strong>Registration ID:</strong> ${entry.id}</p>
-      <p><strong>Date:</strong> ${entry.parsedDate ? entry.parsedDate.toLocaleDateString() : "Not provided"}</p>
-      <p><strong>Status:</strong> ${entry.status || "pending"} | <strong>Payment:</strong> ${entry.paymentState || "pending"}</p>
-      <p><strong>Amount:</strong> ${amount.toFixed(2)} | <strong>Method:</strong> ${entry.paymentMethod || "-"}</p>
+    const details = document.createElement("details");
+    details.className = "doc-item accordion-item";
+    const summary = document.createElement("summary");
+    summary.innerHTML = `<strong>${entry.fullName || entry.studentName || "Unnamed Student"}</strong> · ${entry.status || "pending"} · ${entry.paymentState || "pending"} · GHS ${amount.toFixed(2)}`;
+    const form = document.createElement("form");
+    form.className = "split-3";
+    form.innerHTML = `
+      <label>Status
+        <select name="status">
+          <option value="approved" ${entry.status === "approved" ? "selected" : ""}>Approved</option>
+          <option value="pending" ${entry.status === "pending" || !entry.status ? "selected" : ""}>Pending</option>
+        </select>
+      </label>
+      <label>Payment State
+        <select name="paymentState">
+          <option value="pending" ${entry.paymentState === "pending" || !entry.paymentState ? "selected" : ""}>Pending</option>
+          <option value="paid" ${entry.paymentState === "paid" ? "selected" : ""}>Paid</option>
+        </select>
+      </label>
+      <label>Payment Method
+        <select name="paymentMethod">
+          <option value="cash" ${entry.paymentMethod === "cash" || !entry.paymentMethod ? "selected" : ""}>Cash</option>
+          <option value="mobile_money" ${entry.paymentMethod === "mobile_money" ? "selected" : ""}>Mobile Money</option>
+          <option value="card" ${entry.paymentMethod === "card" ? "selected" : ""}>Card</option>
+          <option value="bank_transfer" ${entry.paymentMethod === "bank_transfer" ? "selected" : ""}>Bank Transfer</option>
+        </select>
+      </label>
+      <label>Amount
+        <input name="amount" type="number" min="0" step="0.01" value="${amount || ""}" required />
+      </label>
+      <div class="actions">
+        <button type="submit" class="secondary">Save</button>
+      </div>
     `;
-    const actions = document.createElement("div");
-    actions.className = "doc-actions";
-    const approveBtn = Object.assign(document.createElement("button"), { textContent: "Use in Payment Form", className: "secondary" });
-    approveBtn.onclick = () => {
-      registrationDocIdInput.value = entry.id;
-      registrationStatusInput.value = entry.status || "approved";
-      registrationPaymentStateInput.value = entry.paymentState || "pending";
-      registrationPaymentMethodInput.value = entry.paymentMethod || "cash";
-      registrationAmountInput.value = String(amount || "");
-      receiptStudentNameInput.value = entry.fullName || entry.studentName || "";
-      receiptEmailInput.value = entry.email || entry.parentEmail || "";
-      receiptPhoneInput.value = entry.phone || entry.parentPhone || "";
-      receiptAmountInput.value = String(amount || "");
-      receiptPaymentMethodInput.value = entry.paymentMethod || "";
-      receiptNumberInput.value = entry.receiptNumber || "";
-      toastMessage("Registration loaded into payment + receipt forms.");
-    };
-    actions.append(approveBtn);
-    card.append(actions);
-    upcomingRegistrationsList.append(card);
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      await saveRegistrationUpdate(entry, new FormData(form));
+    });
+    details.append(summary, form);
+    upcomingRegistrationsList.append(details);
   });
 }
 
@@ -831,6 +727,57 @@ async function loadRegistrations() {
     setLoading(loadRegistrationsBtn, false, "Load Registrations");
     loadRegistrationsBtn.disabled = !currentUser;
   }
+}
+
+async function saveRegistrationUpdate(entry, formData) {
+  const paymentState = String(formData.get("paymentState") || "pending");
+  const amount = Number(formData.get("amount") || 0);
+  const payload = {
+    status: String(formData.get("status") || "pending"),
+    paymentState,
+    paymentMethod: String(formData.get("paymentMethod") || "cash"),
+    amount,
+    paymentUpdatedAt: serverTimestamp(),
+    paymentUpdatedBy: currentUser.email || currentUser.uid
+  };
+  await setDoc(doc(db, "registrations", entry.id), payload, { merge: true });
+  if (paymentState === "paid") {
+    await setDoc(
+      doc(db, "students", entry.id),
+      {
+        studentName: entry.fullName || entry.studentName || "Student",
+        email: entry.email || entry.parentEmail || "",
+        phone: entry.phone || entry.parentPhone || "",
+        registrationId: entry.id,
+        amountPaid: amount,
+        paymentMethod: payload.paymentMethod,
+        paidAt: serverTimestamp(),
+        updatedBy: currentUser.email || currentUser.uid
+      },
+      { merge: true }
+    );
+  }
+  await logEvent("registration_payment_saved", { registrationId: entry.id, paymentState, amount });
+  await Promise.all([loadRegistrations(), loadStudents()]);
+  toastMessage("Registration updated.");
+}
+
+function renderStudents() {
+  if (!approvedStudentsList) return;
+  approvedStudentsList.innerHTML = studentsCache.length ? "" : '<p class="hint">No approved students yet.</p>';
+  studentsCache.forEach((student) => {
+    const item = document.createElement("div");
+    item.className = "doc-item";
+    item.innerHTML = `<h3>${student.studentName || "Unnamed Student"}</h3><p><strong>Registration ID:</strong> ${student.registrationId || student.id}</p><p><strong>Amount Paid:</strong> GHS ${Number(student.amountPaid || 0).toFixed(2)}</p><p><strong>Payment Method:</strong> ${student.paymentMethod || "-"}</p><p><strong>Email:</strong> ${student.email || "-"}</p><p><strong>Phone:</strong> ${student.phone || "-"}</p>`;
+    approvedStudentsList.append(item);
+  });
+}
+
+async function loadStudents() {
+  if (!currentUser) return;
+  const snapshot = await getDocs(collection(db, "students"));
+  studentsCache = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+  renderStudents();
 }
 
 function buildReceiptPayload() {
@@ -912,47 +859,6 @@ if (loadRegistrationsBtn) {
       await loadRegistrations();
     } catch (error) {
       showMessage(`Could not load registrations: ${error.message}`);
-    }
-  });
-}
-if (registrationPaymentForm) {
-  registrationPaymentForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    if (!currentUser) return;
-    const registrationId = registrationDocIdInput.value.trim();
-    if (!registrationId) return showMessage("Registration document ID is required.");
-    const amount = Number(registrationAmountInput.value || 0);
-    try {
-      const payload = {
-        status: registrationStatusInput.value,
-        paymentState: registrationPaymentStateInput.value,
-        paymentMethod: registrationPaymentMethodInput.value,
-        amount,
-        paymentUpdatedAt: serverTimestamp(),
-        paymentUpdatedBy: currentUser.email || currentUser.uid
-      };
-      await setDoc(doc(db, "registrations", registrationId), payload, { merge: true });
-      if (registrationPaymentStateInput.value === "paid") {
-        await setDoc(
-          doc(db, "students", registrationId),
-          {
-            studentName: receiptStudentNameInput.value.trim() || "Student",
-            email: receiptEmailInput.value.trim() || "",
-            phone: receiptPhoneInput.value.trim() || "",
-            registrationId,
-            amountPaid: amount,
-            paymentMethod: registrationPaymentMethodInput.value,
-            paidAt: serverTimestamp(),
-            updatedBy: currentUser.email || currentUser.uid
-          },
-          { merge: true }
-        );
-      }
-      await logEvent("registration_payment_saved", { registrationId, paymentState: registrationPaymentStateInput.value, amount });
-      await loadRegistrations();
-      toastMessage("Registration payment saved.");
-    } catch (error) {
-      showMessage(`Could not save payment: ${error.message}`);
     }
   });
 }
@@ -1104,15 +1010,6 @@ clearClientBtn.addEventListener("click", () => {
   if (clientDonationStatusInput) clientDonationStatusInput.value = "new";
 });
 loadClientsBtn.addEventListener("click", async () => loadClients());
-[smsClientSearchInput, smsClientStatusInput, smsClientProgramInput].forEach((el) =>
-  el.addEventListener("input", () => {
-    renderSmsClientPicker();
-  })
-);
-smsSelectVisibleBtn.addEventListener("click", () => {
-  getFilteredSmsClients().forEach((client) => selectedSmsClientIds.add(client.id));
-  renderSmsClientPicker();
-});
 [clientSearchInput, clientFilterSelect].forEach((el) =>
   el.addEventListener("input", () => {
     clientPage = 1;
@@ -1123,12 +1020,10 @@ smsSelectVisibleBtn.addEventListener("click", () => {
 clientPrevBtn.addEventListener("click", () => {
   clientPage -= 1;
   renderClients();
-  renderSmsClientPicker();
 });
 clientNextBtn.addEventListener("click", () => {
   clientPage += 1;
   renderClients();
-  renderSmsClientPicker();
 });
 [dataSearchInput, dataFilterSelect].forEach((el) =>
   el.addEventListener("input", () => {
@@ -1146,54 +1041,29 @@ dataNextBtn.addEventListener("click", () => {
   renderDocs();
 });
 
-recipientSource.addEventListener("change", () => {
-  manualNumbersWrap.classList.toggle("hidden", recipientSource.value !== "manual");
-  selectClientsWrap.classList.toggle("hidden", recipientSource.value !== "selected");
-  if (recipientSource.value === "selected") renderSmsClientPicker();
-  smsRecipientPreview.textContent = "";
-});
-previewRecipientsBtn.addEventListener("click", async () => {
-  if (!currentUser) return;
-  const source = recipientSource.value === "manual" ? { recipients: getManualRecipients(), optOut: new Set() } : await getClientRecipientsWithOptOut(recipientSource.value);
-  const deduped = dedupeRecipients(source.recipients, source.optOut);
-  smsRecipientPreview.textContent = `Recipients: ${deduped.recipients.length} | Duplicates removed: ${deduped.duplicateCount} | Opt-outs removed: ${deduped.optOutCount}`;
-});
-
 smsForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!currentUser) return;
   try {
-    if (smsMessageInput.value.trim().length > CLIENT_CONSTRAINTS.messageMax) throw new Error("SMS exceeds maximum length.");
-    const source = recipientSource.value === "manual" ? { recipients: getManualRecipients(), optOut: new Set() } : await getClientRecipientsWithOptOut(recipientSource.value);
-    const deduped = dedupeRecipients(source.recipients, source.optOut);
-    await addDoc(collection(db, "bulkSmsCampaigns"), {
-      campaignName: campaignNameInput.value.trim(),
-      message: smsMessageInput.value.trim(),
-      recipientSource: recipientSource.value,
-      recipientCount: deduped.recipients.length,
-      recipients: deduped.recipients,
-      duplicateCount: deduped.duplicateCount,
-      optOutRemoved: deduped.optOutCount,
-      quietHours: quietHoursInput.value.trim(),
-      segment: recipientSegment.value,
-      segmentProgram: segmentProgramInput.value.trim(),
-      status: "draft",
-      retryCount: 0,
-      deliveryStatus: "queued",
-      integration: { provider: "hubtel", connected: true, callbackEnabled: true },
-      costGhs: Number((deduped.recipients.length * 0.07).toFixed(2)),
+    const amount = Number(fundUseAmountInput.value || 0);
+    if (!amount) throw new Error("Amount is required.");
+    await addDoc(collection(db, "disbursements"), {
+      title: campaignNameInput.value.trim(),
+      notes: smsMessageInput.value.trim(),
+      amount,
+      dateUsed: fundUseDateInput.value,
+      category: fundUseCategoryInput.value,
+      program: fundUseProgramInput.value.trim(),
       createdAt: serverTimestamp(),
       createdBy: currentUser.email || currentUser.uid
     });
-    await logEvent("sms_campaign_saved", { campaignName: campaignNameInput.value.trim(), count: deduped.recipients.length });
+    await logEvent("fund_use_saved", { title: campaignNameInput.value.trim(), amount });
     smsForm.reset();
-    manualNumbersWrap.classList.add("hidden");
-    selectClientsWrap.classList.add("hidden");
-    selectedSmsClientIds.clear();
-    smsRecipientPreview.textContent = "Campaign draft saved with dedupe and opt-out checks.";
+    smsRecipientPreview.textContent = "Funds use record saved.";
     await loadCampaigns();
+    await refreshDashboardOverview();
   } catch (error) {
-    showMessage(`Could not save campaign: ${error.message}`);
+    showMessage(`Could not save funds use record: ${error.message}`);
   }
 });
 
@@ -1257,6 +1127,6 @@ onAuthStateChanged(auth, async (user) => {
     reportPresetSelect.innerHTML = '<option value="">Select preset</option>' + presets.map((p, i) => `<option value="${i}">${p.name}</option>`).join("");
     renderSchedules();
     applyRoute(tabButtons, pages);
-    await Promise.all([loadClients(), loadCampaigns(), loadHealthMetrics(), refreshDashboardOverview(), loadRegistrations()]);
+    await Promise.all([loadClients(), loadCampaigns(), loadHealthMetrics(), refreshDashboardOverview(), loadRegistrations(), loadStudents()]);
   } else showMessage("Not signed in.");
 });

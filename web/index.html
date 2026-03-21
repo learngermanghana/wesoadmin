@@ -52,20 +52,20 @@
               <button type="button" id="refresh-dashboard-btn" class="secondary" disabled>Refresh Activity</button>
             </div>
             <p class="hint">This dashboard updates from activities recorded on Funds Use, Beneficiaries, Donations, Exports, and Audit Log pages.</p>
-            <div class="split-3">
-              <div><strong id="dashboard-disbursements">0</strong><p class="hint">Funds use records</p></div>
-              <div><strong id="dashboard-beneficiaries">0</strong><p class="hint">Beneficiary records</p></div>
-              <div><strong id="dashboard-donations">0</strong><p class="hint">Donation records</p></div>
+            <div class="split-3 metric-grid">
+              <div class="metric-card metric-funds"><strong id="dashboard-disbursements">0</strong><p>Funds use records</p></div>
+              <div class="metric-card metric-beneficiaries"><strong id="dashboard-beneficiaries">0</strong><p>Beneficiary records</p></div>
+              <div class="metric-card metric-donations"><strong id="dashboard-donations">0</strong><p>Donation records</p></div>
             </div>
-            <div class="split-3">
-              <div><strong id="dashboard-exports">0</strong><p class="hint">Export requests</p></div>
-              <div><strong id="dashboard-audit">0</strong><p class="hint">Audit events</p></div>
-              <div><strong id="dashboard-last-updated">-</strong><p class="hint">Last synced</p></div>
+            <div class="split-3 metric-grid">
+              <div class="metric-card metric-exports"><strong id="dashboard-exports">0</strong><p>Export requests</p></div>
+              <div class="metric-card metric-audit"><strong id="dashboard-audit">0</strong><p>Audit events</p></div>
+              <div class="metric-card metric-sync"><strong id="dashboard-last-updated">-</strong><p>Last synced</p></div>
             </div>
           </div>
           <div class="card">
-            <h3>Recent Activity</h3>
-            <div id="dashboard-activity-list" class="hint">No activity loaded yet.</div>
+            <h3>Overview Notes</h3>
+            <p class="hint">Simple, color-coded metrics to track operations at a glance.</p>
           </div>
 
           <div class="hidden" aria-hidden="true">
@@ -105,7 +105,7 @@
         <section class="page" id="makeup-registration-page" data-interface="makeup">
           <div class="card">
             <h2>Registration Approvals</h2>
-            <p class="hint">Pulling from Firestore collection <code>registrations</code>. Approve each student and track payment details.</p>
+            <p class="hint">List view for registrations. Click any record to expand and edit status/payment details.</p>
             <div class="actions">
               <button type="button" id="load-registrations-btn" class="secondary" disabled>Load Registrations</button>
             </div>
@@ -115,38 +115,9 @@
 
         <section class="page" id="makeup-student-page" data-interface="makeup">
           <div class="card">
-            <h2>Student Payment Update</h2>
-            <form id="registration-payment-form">
-              <label>Registration Document ID
-                <input type="text" id="registration-doc-id" placeholder="Paste ID from list" required />
-              </label>
-              <div class="split-3">
-                <label>Status
-                  <select id="registration-status">
-                    <option value="approved">Approved</option>
-                    <option value="pending">Pending</option>
-                  </select>
-                </label>
-                <label>Payment State
-                  <select id="registration-payment-state">
-                    <option value="pending">Pending</option>
-                    <option value="paid">Paid</option>
-                  </select>
-                </label>
-                <label>Payment Method
-                  <select id="registration-payment-method">
-                    <option value="cash">Cash</option>
-                    <option value="mobile_money">Mobile Money</option>
-                    <option value="card">Card</option>
-                    <option value="bank_transfer">Bank Transfer</option>
-                  </select>
-                </label>
-              </div>
-              <label>Amount
-                <input type="number" id="registration-amount" min="0" step="0.01" placeholder="0.00" required />
-              </label>
-              <button type="submit" id="save-registration-payment-btn" disabled>Save Payment &amp; Approval</button>
-            </form>
+            <h2>Approved Students</h2>
+            <p class="hint">This list shows students who have been paid and auto-moved from registrations.</p>
+            <div id="approved-students-list" class="stack-list"></div>
           </div>
         </section>
 
@@ -247,41 +218,26 @@
 
         <section class="page" id="bulk-sms-page" data-interface="ngo">
           <div class="card">
-            <h2>Funds Use</h2>
+            <h2>Funds Use Recording</h2>
             <form id="sms-form">
-              <label>Entry Title<input type="text" id="campaign-name" placeholder="April Chemotherapy Disbursement" required /></label>
-              <label>Fund Use Notes<textarea id="sms-message" rows="4" maxlength="320" placeholder="Describe why and how funds were used" required></textarea></label>
-              <label>Recipient Source
-                <select id="recipient-source">
-                  <option value="clients">All clients</option>
-                  <option value="selected">Choose clients from list</option>
-                  <option value="manual">Manual comma-separated numbers</option>
-                </select>
-              </label>
+              <label>Entry Title<input type="text" id="campaign-name" placeholder="April Chemotherapy Support" required /></label>
               <div class="split-3">
-                <label>Segmentation
-                  <select id="recipient-segment"><option value="all">All clients</option><option value="active">Active only</option><option value="program">By program</option></select>
+                <label>Amount (GHS)<input type="number" id="fund-use-amount" min="0" step="0.01" placeholder="0.00" required /></label>
+                <label>Date Used<input type="date" id="fund-use-date" required /></label>
+                <label>Category
+                  <select id="fund-use-category">
+                    <option value="medication">Medication</option>
+                    <option value="treatment">Treatment</option>
+                    <option value="transport">Transport</option>
+                    <option value="nutrition">Nutrition</option>
+                    <option value="other">Other</option>
+                  </select>
                 </label>
-                <label>Program for segment<input id="segment-program" type="text" placeholder="oncology-support" /></label>
-                <label>Quiet hours (HH:MM-HH:MM)<input id="quiet-hours" type="text" placeholder="21:00-06:00" /></label>
               </div>
-              <label id="manual-numbers-wrap" class="hidden">Manual Phone Numbers<textarea id="manual-numbers" rows="3" placeholder="+233xxxx,+233yyyy"></textarea></label>
-              <div id="select-clients-wrap" class="hidden">
-                <div class="split-3">
-                  <label>Find client<input id="sms-client-search" type="text" placeholder="Search by name, phone, or email" /></label>
-                  <label>Status
-                    <select id="sms-client-status"><option value="all">All</option><option value="active">Active only</option><option value="deleted">Archived only</option></select>
-                  </label>
-                  <label>Program
-                    <input id="sms-client-program" type="text" placeholder="Leave blank for all" />
-                  </label>
-                </div>
-                <button type="button" class="secondary" id="sms-select-visible-btn">Select all shown</button>
-                <div id="sms-client-picker" class="picker-list"></div>
-              </div>
+              <label>Beneficiary / Program<input type="text" id="fund-use-program" placeholder="Child name, hospital, or support program" /></label>
+              <label>Fund Use Notes<textarea id="sms-message" rows="4" maxlength="320" placeholder="Describe why and how funds were used" required></textarea></label>
               <div class="actions">
-                <button type="button" id="preview-recipients-btn" disabled>Preview Recipients</button>
-                <button type="submit" id="save-campaign-btn" disabled>Save Campaign Draft</button>
+                <button type="submit" id="save-campaign-btn" disabled>Save Funds Use Record</button>
               </div>
             </form>
             <p id="sms-recipient-preview" class="hint"></p>
