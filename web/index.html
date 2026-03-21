@@ -28,17 +28,23 @@
     <div id="toast" class="toast hidden"></div>
 
     <div id="admin-shell" class="hidden-by-auth">
+      <div class="interface-switcher">
+        <button class="interface-btn active" type="button" data-interface="ngo">NGO Interface</button>
+        <button class="interface-btn" type="button" data-interface="makeup">Make Up Interface</button>
+      </div>
       <nav class="page-nav">
-        <button class="tab-btn active" data-page="reports-page">Overview</button>
-        <button class="tab-btn" data-page="makeup-school-page">Make Up &amp; More School</button>
-        <button class="tab-btn" data-page="bulk-sms-page">Funds Use</button>
-        <button class="tab-btn" data-page="donations-page">Donations</button>
-        <button class="tab-btn" data-page="exports-page">Exports</button>
-        <button class="tab-btn" data-page="audit-log-page">Audit Log</button>
+        <button class="tab-btn active" data-interface="ngo" data-page="reports-page">Overview</button>
+        <button class="tab-btn" data-interface="ngo" data-page="bulk-sms-page">Funds Use</button>
+        <button class="tab-btn" data-interface="ngo" data-page="donations-page">Donations</button>
+        <button class="tab-btn" data-interface="ngo" data-page="exports-page">Exports</button>
+        <button class="tab-btn" data-interface="ngo" data-page="audit-log-page">Audit Log</button>
+        <button class="tab-btn" data-interface="makeup" data-page="makeup-registration-page">Registration</button>
+        <button class="tab-btn" data-interface="makeup" data-page="makeup-student-page">Student</button>
+        <button class="tab-btn" data-interface="makeup" data-page="makeup-receipt-page">Receipt</button>
       </nav>
 
       <main>
-        <section class="page active" id="reports-page">
+        <section class="page active" id="reports-page" data-interface="ngo">
           <div class="card">
             <div class="row">
               <h2>Dashboard Overview</h2>
@@ -95,7 +101,7 @@
           </div>
         </section>
 
-        <section class="page" id="makeup-school-page">
+        <section class="page" id="makeup-registration-page" data-interface="makeup">
           <div class="card">
             <h2>Registration Approvals</h2>
             <p class="hint">Pulling from Firestore collection <code>registrations</code>. Approve each student and track payment details.</p>
@@ -104,7 +110,9 @@
             </div>
             <div id="upcoming-registrations-list"></div>
           </div>
+        </section>
 
+        <section class="page" id="makeup-student-page" data-interface="makeup">
           <div class="card">
             <h2>Student Payment Update</h2>
             <form id="registration-payment-form">
@@ -139,7 +147,9 @@
               <button type="submit" id="save-registration-payment-btn" disabled>Save Payment &amp; Approval</button>
             </form>
           </div>
+        </section>
 
+        <section class="page" id="makeup-receipt-page" data-interface="makeup">
           <div class="card">
             <h2>Receipt Generator</h2>
             <form id="receipt-form">
@@ -176,7 +186,7 @@
           </div>
         </section>
 
-        <section class="page" id="clients-page">
+        <section class="page" id="clients-page" data-interface="ngo">
           <div class="card">
             <h2>Client Data</h2>
             <form id="client-form">
@@ -216,7 +226,7 @@
           </div>
         </section>
 
-        <section class="page" id="bulk-sms-page">
+        <section class="page" id="bulk-sms-page" data-interface="ngo">
           <div class="card">
             <h2>Funds Use</h2>
             <form id="sms-form">
@@ -260,7 +270,7 @@
           <div class="card"><h3>Funds Use Activity</h3><p id="campaign-analytics" class="hint"></p><div id="campaigns-list"></div></div>
         </section>
 
-        <section class="page" id="data-page">
+        <section class="page" id="data-page" data-interface="ngo">
           <div class="card" id="data-card">
             <div class="row">
               <h2>Beneficiaries</h2>
@@ -297,7 +307,7 @@
           </div>
         </section>
 
-        <section class="page" id="donations-page">
+        <section class="page" id="donations-page" data-interface="ngo">
           <div class="card">
             <h2>Donations</h2>
             <p class="hint">Data input form for recording donor activity.</p>
@@ -313,7 +323,7 @@
           </div>
         </section>
 
-        <section class="page" id="exports-page">
+        <section class="page" id="exports-page" data-interface="ngo">
           <div class="card">
             <h2>Exports</h2>
             <p class="hint">Set up export requests and delivery details.</p>
@@ -337,7 +347,7 @@
           </div>
         </section>
 
-        <section class="page" id="audit-log-page">
+        <section class="page" id="audit-log-page" data-interface="ngo">
           <div class="card">
             <h2>Audit Log</h2>
             <p class="hint">Capture and review administrative action history.</p>

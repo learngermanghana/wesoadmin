@@ -46,6 +46,7 @@ const REPORT_ENDPOINTS = resolveReportEndpoints({
 });
 
 const $ = (id) => document.getElementById(id);
+const interfaceButtons = Array.from(document.querySelectorAll(".interface-btn"));
 const tabButtons = Array.from(document.querySelectorAll(".tab-btn"));
 const pages = Array.from(document.querySelectorAll(".page"));
 const authForm = $("auth-form");
@@ -183,6 +184,7 @@ let pendingDisbursementImport = [];
 let selectedSmsClientIds = new Set();
 let registrationsCache = [];
 let lastGeneratedReceipt = null;
+let currentInterface = "ngo";
 
 if (window.Sentry && window.WESO_SENTRY_DSN) {
   window.Sentry.init({ dsn: window.WESO_SENTRY_DSN, environment: ENV });
@@ -277,9 +279,37 @@ function loadUrlState() {
   dataFilterSelect.value = params.get("dataFilter") || "all";
 }
 
+function setInterfaceView(nextInterface) {
+  currentInterface = nextInterface === "makeup" ? "makeup" : "ngo";
+  interfaceButtons.forEach((button) => button.classList.toggle("active", button.dataset.interface === currentInterface));
+  tabButtons.forEach((button) => {
+    const visible = button.dataset.interface === currentInterface;
+    button.classList.toggle("hidden", !visible);
+  });
+}
+
+function ensureInterfacePageIsVisible() {
+  const activePage = pages.find((page) => page.classList.contains("active"));
+  const activePageInterface = activePage?.dataset.interface || "ngo";
+  if (activePageInterface === currentInterface) return;
+  const fallbackButton = tabButtons.find((button) => button.dataset.interface === currentInterface);
+  if (fallbackButton) switchPage(tabButtons, pages, fallbackButton.dataset.page);
+}
+
 bindPageRoutes(tabButtons, pages);
 loadUrlState();
 applyRoute(tabButtons, pages);
+setInterfaceView(pages.find((page) => page.classList.contains("active"))?.dataset.interface || "ngo");
+ensureInterfacePageIsVisible();
+interfaceButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    setInterfaceView(button.dataset.interface);
+    ensureInterfacePageIsVisible();
+  });
+});
+window.addEventListener("hashchange", () => {
+  setInterfaceView(pages.find((page) => page.classList.contains("active"))?.dataset.interface || "ngo");
+});
 
 async function callReportEndpoint(path, payload) {
   if (!currentUser) throw new Error("Sign in first.");

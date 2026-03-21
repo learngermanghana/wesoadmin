@@ -1,6 +1,8 @@
 const ROUTES = {
   "reports-page": "/overview",
-  "makeup-school-page": "/makeup-school",
+  "makeup-registration-page": "/makeup/registration",
+  "makeup-student-page": "/makeup/student",
+  "makeup-receipt-page": "/makeup/receipt",
   "bulk-sms-page": "/funds-use",
   "donations-page": "/donations",
   "exports-page": "/exports",
