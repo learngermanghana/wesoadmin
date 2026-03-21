@@ -118,6 +118,9 @@ const clientIdInput = $("client-id");
 const clientNameInput = $("client-name");
 const clientEmailInput = $("client-email");
 const clientPhoneInput = $("client-phone");
+const clientDonationStatusInput = $("client-donation-status");
+const clientPledgedAmountInput = $("client-pledged-amount");
+const clientFollowupDateInput = $("client-followup-date");
 const clientNotesInput = $("client-notes");
 const clientOptOutInput = $("client-optout");
 const saveClientBtn = $("save-client-btn");
@@ -431,7 +434,7 @@ function renderClients() {
   page.items.forEach((client) => {
     const item = document.createElement("div");
     item.className = "doc-item";
-    item.innerHTML = `<h3>${client.name || "Unnamed Client"} ${client.isDeleted ? "(Archived)" : ""}</h3><p><strong>Email:</strong> ${client.email || "-"}</p><p><strong>Phone:</strong> ${client.phone || "-"}</p><p><strong>Opt-out:</strong> ${client.optOutSms ? "Yes" : "No"}</p>`;
+    item.innerHTML = `<h3>${client.name || "Unnamed Client"} ${client.isDeleted ? "(Archived)" : ""}</h3><p><strong>Email:</strong> ${client.email || "-"}</p><p><strong>Phone:</strong> ${client.phone || "-"}</p><p><strong>Status:</strong> ${client.donationStatus || "new"}</p><p><strong>Pledged:</strong> ${Number(client.pledgedAmount || 0).toFixed(2)}</p><p><strong>Next follow-up:</strong> ${client.nextFollowUpDate || "-"}</p><p><strong>Opt-out:</strong> ${client.optOutSms ? "Yes" : "No"}</p>`;
     const actions = document.createElement("div");
     actions.className = "doc-actions";
     const editBtn = Object.assign(document.createElement("button"), { className: "secondary", textContent: "Edit" });
@@ -440,6 +443,9 @@ function renderClients() {
       clientNameInput.value = client.name || "";
       clientEmailInput.value = client.email || "";
       clientPhoneInput.value = client.phone || "";
+      clientDonationStatusInput.value = client.donationStatus || "new";
+      clientPledgedAmountInput.value = client.pledgedAmount ?? "";
+      clientFollowupDateInput.value = client.nextFollowUpDate || "";
       clientNotesInput.value = client.notes || "";
       clientOptOutInput.checked = !!client.optOutSms;
     };
@@ -1041,6 +1047,9 @@ clientForm.addEventListener("submit", async (event) => {
     name: clientNameInput.value.trim(),
     email: clientEmailInput.value.trim(),
     phone: clientPhoneInput.value.trim(),
+    donationStatus: clientDonationStatusInput.value,
+    pledgedAmount: Number(clientPledgedAmountInput.value || 0),
+    nextFollowUpDate: clientFollowupDateInput.value || null,
     notes: clientNotesInput.value.trim(),
     optOutSms: clientOptOutInput.checked,
     updatedAt: serverTimestamp(),
@@ -1062,6 +1071,7 @@ clientForm.addEventListener("submit", async (event) => {
 clearClientBtn.addEventListener("click", () => {
   clientForm.reset();
   clientIdInput.value = "";
+  if (clientDonationStatusInput) clientDonationStatusInput.value = "new";
 });
 loadClientsBtn.addEventListener("click", async () => loadClients());
 [smsClientSearchInput, smsClientStatusInput, smsClientProgramInput].forEach((el) =>
