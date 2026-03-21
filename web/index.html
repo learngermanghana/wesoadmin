@@ -33,6 +33,7 @@
         <button class="tab-btn" data-page="makeup-school-page">Make Up &amp; More School</button>
         <button class="tab-btn" data-page="bulk-sms-page">Funds Use</button>
         <button class="tab-btn" data-page="data-page">Beneficiaries</button>
+        <button class="tab-btn" data-page="clients-page">Donor Follow-up</button>
         <button class="tab-btn" data-page="donations-page">Donations</button>
         <button class="tab-btn" data-page="exports-page">Exports</button>
         <button class="tab-btn" data-page="audit-log-page">Audit Log</button>
@@ -179,13 +180,31 @@
 
         <section class="page" id="clients-page">
           <div class="card">
-            <h2>Client Data</h2>
+            <h2>Donor Follow-up Clients</h2>
+            <p class="hint">Save potential donors and track follow-up progress so your team knows who to contact next.</p>
             <form id="client-form">
               <label>Client ID (optional)<input type="text" id="client-id" placeholder="auto-generated if empty" /></label>
               <label>Full Name<input type="text" id="client-name" placeholder="Jane Doe" required maxlength="120" /></label>
               <div class="split-2">
                 <label>Email<input type="email" id="client-email" placeholder="jane@example.com" required maxlength="120" /></label>
                 <label>Phone Number<input type="text" id="client-phone" placeholder="+233xxxxxxxxx" required minlength="10" maxlength="16" /></label>
+              </div>
+              <div class="split-3">
+                <label>Donation Status
+                  <select id="client-donation-status">
+                    <option value="new">New lead</option>
+                    <option value="contacted">Contacted</option>
+                    <option value="pledged">Pledged</option>
+                    <option value="donated">Donated</option>
+                    <option value="follow_up_needed">Follow-up needed</option>
+                  </select>
+                </label>
+                <label>Pledged Amount
+                  <input type="number" id="client-pledged-amount" min="0" step="0.01" placeholder="0.00" />
+                </label>
+                <label>Next Follow-up Date
+                  <input type="date" id="client-followup-date" />
+                </label>
               </div>
               <label>Notes<textarea id="client-notes" rows="3" placeholder="Extra details" maxlength="500"></textarea></label>
               <label><input type="checkbox" id="client-optout" /> SMS opt-out</label>

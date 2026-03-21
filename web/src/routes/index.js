@@ -3,6 +3,7 @@ const ROUTES = {
   "makeup-school-page": "/makeup-school",
   "bulk-sms-page": "/funds-use",
   "data-page": "/beneficiaries",
+  "clients-page": "/donor-follow-up",
   "donations-page": "/donations",
   "exports-page": "/exports",
   "audit-log-page": "/audit-log"
