@@ -1,5 +1,6 @@
 const ROUTES = {
   "reports-page": "/overview",
+  "makeup-school-page": "/makeup-school",
   "bulk-sms-page": "/funds-use",
   "data-page": "/beneficiaries",
   "donations-page": "/donations",
