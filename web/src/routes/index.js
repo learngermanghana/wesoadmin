@@ -4,6 +4,7 @@ const ROUTES = {
   "makeup-student-page": "/makeup/student",
   "makeup-receipt-page": "/makeup/receipt",
   "bulk-sms-page": "/funds-use",
+  "clients-page": "/clients",
   "donations-page": "/donations",
   "exports-page": "/exports",
   "audit-log-page": "/audit-log"
