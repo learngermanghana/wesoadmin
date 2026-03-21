@@ -60,7 +60,23 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  padding: 1rem;
+  padding: 0 1rem 1rem;
+}
+
+.interface-switcher {
+  display: flex;
+  gap: 0.5rem;
+  padding: 1rem 1rem 0.5rem;
+}
+
+.interface-btn {
+  width: auto;
+  padding: 0.5rem 1rem;
+  background: #1e3a8a;
+}
+
+.interface-btn.active {
+  background: #0b5aa9;
 }
 
 .tab-btn {
