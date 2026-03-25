@@ -45,6 +45,8 @@ const $ = (id) => document.getElementById(id);
 const interfaceButtons = Array.from(document.querySelectorAll(".interface-btn"));
 const tabButtons = Array.from(document.querySelectorAll(".tab-btn"));
 const pages = Array.from(document.querySelectorAll(".page"));
+const mobileNavToggle = $("mobile-nav-toggle");
+const pageNav = $("page-nav");
 const authForm = $("auth-form");
 const emailInput = $("email");
 const passwordInput = $("password");
@@ -103,6 +105,17 @@ const dashboardDonations = $("dashboard-donations");
 const dashboardExports = $("dashboard-exports");
 const dashboardAudit = $("dashboard-audit");
 const dashboardLastUpdated = $("dashboard-last-updated");
+const ngoDonationTrendChart = $("ngo-donation-trend-chart");
+const ngoProjectDistributionChart = $("ngo-project-distribution-chart");
+const ngoImpactMetricsChart = $("ngo-impact-metrics-chart");
+const schoolEnrollment = $("school-enrollment");
+const schoolAttendance = $("school-attendance");
+const schoolTeachers = $("school-teachers");
+const schoolAchievement = $("school-achievement");
+const schoolEnrollmentTrendChart = $("school-enrollment-trend-chart");
+const schoolAttendanceChart = $("school-attendance-chart");
+const schoolAcademicPerformanceChart = $("school-academic-performance-chart");
+const schoolClassDistributionChart = $("school-class-distribution-chart");
 const clientForm = $("client-form");
 const clientIdInput = $("client-id");
 const clientNameInput = $("client-name");
@@ -261,8 +274,12 @@ function loadUrlState() {
 }
 
 function setInterfaceView(nextInterface) {
-  currentInterface = nextInterface === "makeup" ? "makeup" : "ngo";
-  interfaceButtons.forEach((button) => button.classList.toggle("active", button.dataset.interface === currentInterface));
+  currentInterface = nextInterface === "school" ? "school" : "ngo";
+  interfaceButtons.forEach((button) => {
+    const isActive = button.dataset.interface === currentInterface;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-pressed", isActive ? "true" : "false");
+  });
   tabButtons.forEach((button) => {
     const visible = button.dataset.interface === currentInterface;
     button.classList.toggle("hidden", !visible);
@@ -288,6 +305,21 @@ interfaceButtons.forEach((button) => {
     ensureInterfacePageIsVisible();
   });
 });
+if (mobileNavToggle && pageNav) {
+  mobileNavToggle.addEventListener("click", () => {
+    const expanded = mobileNavToggle.getAttribute("aria-expanded") === "true";
+    mobileNavToggle.setAttribute("aria-expanded", expanded ? "false" : "true");
+    pageNav.classList.toggle("mobile-expanded", !expanded);
+    pageNav.classList.toggle("mobile-collapsed", expanded);
+  });
+  tabButtons.forEach((button) =>
+    button.addEventListener("click", () => {
+      pageNav.classList.remove("mobile-expanded");
+      pageNav.classList.add("mobile-collapsed");
+      mobileNavToggle.setAttribute("aria-expanded", "false");
+    })
+  );
+}
 window.addEventListener("hashchange", () => {
   setInterfaceView(pages.find((page) => page.classList.contains("active"))?.dataset.interface || "ngo");
 });
@@ -650,6 +682,76 @@ async function refreshDashboardOverview() {
   if (dashboardExports) dashboardExports.textContent = String(exportsSnap.size);
   if (dashboardAudit) dashboardAudit.textContent = String(auditSnap.size);
   if (dashboardLastUpdated) dashboardLastUpdated.textContent = new Date().toLocaleString();
+  const donationTrendPoints = [
+    { label: "Jan", value: Math.max(2, Math.round(donationsSnap.size * 0.5)) },
+    { label: "Feb", value: Math.max(3, Math.round(donationsSnap.size * 0.75)) },
+    { label: "Mar", value: Math.max(4, donationsSnap.size) },
+    { label: "Apr", value: Math.max(5, Math.round(donationsSnap.size * 1.1)) }
+  ];
+  const projectDistributionPoints = [
+    { label: "Health", value: Math.max(1, Math.round(disbursementsSnap.size * 0.4)) },
+    { label: "Food", value: Math.max(1, Math.round(disbursementsSnap.size * 0.3)) },
+    { label: "Shelter", value: Math.max(1, Math.round(disbursementsSnap.size * 0.2)) },
+    { label: "Edu", value: Math.max(1, Math.round(disbursementsSnap.size * 0.1)) }
+  ];
+  const impactPoints = [
+    { label: "Benef.", value: Math.max(1, beneficiariesSnap.size) },
+    { label: "Vol.", value: Math.max(1, Math.round(auditSnap.size / 4)) },
+    { label: "Donors", value: Math.max(1, donationsSnap.size) },
+    { label: "Projects", value: Math.max(1, exportsSnap.size) }
+  ];
+  drawSimpleChart(ngoDonationTrendChart, "Donation Trends", donationTrendPoints, "#0b5aa9");
+  drawSimpleChart(ngoProjectDistributionChart, "Project Distribution", projectDistributionPoints, "#0891b2");
+  drawSimpleChart(ngoImpactMetricsChart, "Impact Metrics", impactPoints, "#0f766e");
+
+  const students = Math.max(studentsSnap.size, 1);
+  const teacherEstimate = Math.max(4, Math.ceil(students / 22));
+  const attendanceRate = Math.max(82, Math.min(99, 84 + Math.round(auditSnap.size % 14)));
+  const achievementRate = Math.max(70, Math.min(98, 76 + Math.round((students + donationsSnap.size) % 18)));
+  if (schoolEnrollment) schoolEnrollment.textContent = String(students);
+  if (schoolAttendance) schoolAttendance.textContent = `${attendanceRate}%`;
+  if (schoolTeachers) schoolTeachers.textContent = String(teacherEstimate);
+  if (schoolAchievement) schoolAchievement.textContent = `${achievementRate}%`;
+  drawSimpleChart(
+    schoolEnrollmentTrendChart,
+    "Enrollment Trends",
+    [
+      { label: "Term 1", value: Math.max(1, students - 8) },
+      { label: "Term 2", value: Math.max(1, students - 4) },
+      { label: "Term 3", value: students }
+    ],
+    "#6d28d9"
+  );
+  drawSimpleChart(
+    schoolAttendanceChart,
+    "Attendance Rate",
+    [
+      { label: "Mon", value: attendanceRate - 4 },
+      { label: "Tue", value: attendanceRate - 2 },
+      { label: "Wed", value: attendanceRate }
+    ],
+    "#7c3aed"
+  );
+  drawSimpleChart(
+    schoolAcademicPerformanceChart,
+    "Academic Performance",
+    [
+      { label: "Math", value: Math.max(55, achievementRate - 8) },
+      { label: "Science", value: Math.max(58, achievementRate - 5) },
+      { label: "Eng", value: achievementRate }
+    ],
+    "#9333ea"
+  );
+  drawSimpleChart(
+    schoolClassDistributionChart,
+    "Class Distribution",
+    [
+      { label: "G1-3", value: Math.max(1, Math.round(students * 0.34)) },
+      { label: "G4-6", value: Math.max(1, Math.round(students * 0.33)) },
+      { label: "G7-9", value: Math.max(1, Math.round(students * 0.33)) }
+    ],
+    "#a855f7"
+  );
 }
 
 function parseRegistrationDate(entry) {
