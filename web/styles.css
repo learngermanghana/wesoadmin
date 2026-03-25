@@ -67,16 +67,40 @@ body {
   display: flex;
   gap: 0.5rem;
   padding: 1rem 1rem 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.switcher-title {
+  font-weight: 700;
+  color: #0f172a;
+  margin-right: 0.5rem;
 }
 
 .interface-btn {
   width: auto;
-  padding: 0.5rem 1rem;
-  background: #1e3a8a;
+  padding: 0.6rem 1.1rem;
+  border: 2px solid transparent;
+  background: #dbeafe;
+  color: #0b5aa9;
+  font-weight: 700;
 }
 
 .interface-btn.active {
   background: #0b5aa9;
+  color: #fff;
+  border-color: #0b5aa9;
+}
+
+.interface-btn.school-theme {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.interface-btn.school-theme.active {
+  background: #6d28d9;
+  border-color: #6d28d9;
+  color: #fff;
 }
 
 .tab-btn {
@@ -86,6 +110,16 @@ body {
 
 .tab-btn.active {
   background: #0b5aa9;
+}
+.tab-btn.school-tab.active {
+  background: #6d28d9;
+}
+
+.mobile-nav-toggle {
+  display: none;
+  margin: 0 1rem 0.75rem;
+  width: calc(100% - 2rem);
+  background: #1e293b;
 }
 
 main {
@@ -152,6 +186,11 @@ button {
   flex: 1;
   min-width: 220px;
 }
+.split-4 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.6rem;
+}
 
 .metric-card {
   border-radius: 10px;
@@ -172,6 +211,20 @@ button {
 .metric-exports { background: #ede9fe; }
 .metric-audit { background: #fee2e2; }
 .metric-sync { background: #e2e8f0; }
+.metric-school-enrollment { background: #e9d5ff; }
+.metric-school-attendance { background: #ddd6fe; }
+.metric-school-teachers { background: #f5d0fe; }
+.metric-school-achievement { background: #fae8ff; }
+
+.event-card {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 1rem;
+}
+.events-list {
+  margin: 0;
+  padding-left: 1rem;
+}
 
 .accordion-item summary {
   cursor: pointer;
@@ -256,6 +309,27 @@ button:disabled {
 
 .file-label input {
   margin-top: 0;
+}
+
+@media (max-width: 800px) {
+  .mobile-nav-toggle {
+    display: block;
+  }
+  .page-nav.mobile-collapsed {
+    display: none;
+  }
+  .page-nav.mobile-expanded {
+    display: flex;
+    padding-top: 0;
+  }
+  .tab-btn {
+    width: 100%;
+    min-height: 48px;
+    font-size: 1rem;
+  }
+  .interface-switcher {
+    padding-bottom: 0.75rem;
+  }
 }
 
 canvas {
