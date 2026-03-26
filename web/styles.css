@@ -11,7 +11,7 @@ body {
 }
 
 .topbar {
-  background: #0b5aa9;
+  background: linear-gradient(135deg, #0b5aa9 0%, #1d4ed8 58%, #6d28d9 100%);
   color: #fff;
   padding: 1rem 2rem;
   display: flex;
@@ -27,6 +27,46 @@ body {
 
 .topbar p {
   margin: 0.3rem 0 0;
+}
+.brand-block p:last-child {
+  font-weight: 600;
+}
+
+.header-switch-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.switcher-kicker {
+  margin: 0;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.9;
+}
+.header-switcher {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: rgba(255, 255, 255, 0.22);
+  padding: 0.22rem;
+  border-radius: 999px;
+  min-width: 280px;
+}
+.switch-thumb {
+  position: absolute;
+  top: 0.22rem;
+  left: 0.22rem;
+  width: calc(50% - 0.22rem);
+  height: calc(100% - 0.44rem);
+  border-radius: 999px;
+  background: #0b5aa9;
+  transition: transform 220ms ease, background-color 220ms ease;
+  box-shadow: 0 6px 16px rgba(2, 6, 23, 0.25);
+}
+.header-switcher[data-active-interface="school"] .switch-thumb {
+  transform: translateX(100%);
+  background: #6d28d9;
 }
 
 .auth-inline {
@@ -60,32 +100,60 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  padding: 0 1rem 1rem;
-}
-
-.interface-switcher {
-  display: flex;
-  gap: 0.5rem;
-  padding: 1rem 1rem 0.5rem;
+  padding: 0.25rem 1rem 1rem;
+  align-items: center;
 }
 
 .interface-btn {
+  position: relative;
+  z-index: 1;
+  margin-top: 0;
   width: auto;
-  padding: 0.5rem 1rem;
-  background: #1e3a8a;
+  min-width: 110px;
+  min-height: 48px;
+  border: 0;
+  background: transparent;
+  color: #e2e8f0;
+  font-weight: 700;
+  text-align: center;
+  border-radius: 999px;
 }
 
 .interface-btn.active {
-  background: #0b5aa9;
+  color: #fff;
+}
+
+.interface-btn.school-theme {
+  color: #f3e8ff;
 }
 
 .tab-btn {
   width: auto;
   background: #334155;
 }
+.tab-btn.legacy-tab {
+  background: #64748b;
+}
+.menu-heading {
+  margin: 0 0.2rem 0 1rem;
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 700;
+}
 
 .tab-btn.active {
   background: #0b5aa9;
+}
+.tab-btn.school-tab.active {
+  background: #6d28d9;
+}
+
+.mobile-nav-toggle {
+  display: none;
+  margin: 0 1rem 0.75rem;
+  width: calc(100% - 2rem);
+  min-height: 48px;
+  background: #1e293b;
 }
 
 main {
@@ -152,6 +220,11 @@ button {
   flex: 1;
   min-width: 220px;
 }
+.split-4 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.6rem;
+}
 
 .metric-card {
   border-radius: 10px;
@@ -172,6 +245,20 @@ button {
 .metric-exports { background: #ede9fe; }
 .metric-audit { background: #fee2e2; }
 .metric-sync { background: #e2e8f0; }
+.metric-school-enrollment { background: #e9d5ff; }
+.metric-school-attendance { background: #ddd6fe; }
+.metric-school-teachers { background: #f5d0fe; }
+.metric-school-achievement { background: #fae8ff; }
+
+.event-card {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 1rem;
+}
+.events-list {
+  margin: 0;
+  padding-left: 1rem;
+}
 
 .accordion-item summary {
   cursor: pointer;
@@ -256,6 +343,45 @@ button:disabled {
 
 .file-label input {
   margin-top: 0;
+}
+
+@media (max-width: 800px) {
+  .topbar {
+    padding: 1rem;
+  }
+  .header-switch-shell,
+  .header-switcher {
+    width: 100%;
+    min-width: 0;
+  }
+  .auth-inline {
+    width: 100%;
+  }
+  .auth-inline input,
+  .auth-inline button {
+    min-height: 48px;
+  }
+  .mobile-nav-toggle {
+    display: block;
+  }
+  .page-nav.mobile-collapsed {
+    display: none;
+  }
+  .page-nav.mobile-expanded {
+    display: flex;
+    padding-top: 0;
+    gap: 0.65rem;
+  }
+  .tab-btn {
+    width: 100%;
+    min-height: 48px;
+    font-size: 1rem;
+  }
+  .menu-heading {
+    width: 100%;
+    margin: 0.5rem 0 0;
+    padding-left: 0.15rem;
+  }
 }
 
 canvas {

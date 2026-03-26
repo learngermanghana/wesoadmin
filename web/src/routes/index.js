@@ -1,13 +1,18 @@
 const ROUTES = {
   "reports-page": "/overview",
-  "makeup-registration-page": "/makeup/registration",
-  "makeup-student-page": "/makeup/student",
-  "makeup-receipt-page": "/makeup/receipt",
+  "school-dashboard-page": "/school/dashboard",
+  "school-students-page": "/school/students",
+  "school-events-page": "/school/events",
   "bulk-sms-page": "/funds-use",
   "clients-page": "/clients",
   "donations-page": "/donations",
   "exports-page": "/exports",
   "audit-log-page": "/audit-log"
+};
+const LEGACY_ROUTE_ALIASES = {
+  "/makeup/registration": "/school/dashboard",
+  "/makeup/student": "/school/students",
+  "/makeup/receipt": "/school/events"
 };
 
 const FALLBACK_PAGE = "reports-page";
@@ -15,7 +20,8 @@ const FALLBACK_PAGE = "reports-page";
 function normalizeRoute(path) {
   const value = (path || "").trim().toLowerCase();
   if (!value) return ROUTES[FALLBACK_PAGE];
-  return value.startsWith("/") ? value : `/${value}`;
+  const normalized = value.startsWith("/") ? value : `/${value}`;
+  return LEGACY_ROUTE_ALIASES[normalized] || normalized;
 }
 
 function pageIdFromRoute(path) {

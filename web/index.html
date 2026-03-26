@@ -8,10 +8,18 @@
   </head>
   <body>
     <header class="topbar">
-      <div>
+      <div class="brand-block">
         <h1>Wesomo Child Cancer Foundation</h1>
         <p>Admin Dashboard</p>
         <p id="auth-status">Not signed in.</p>
+      </div>
+      <div class="header-switch-shell" aria-label="Dashboard mode switcher">
+        <p class="switcher-kicker">Smart Switcher</p>
+        <div class="header-switcher" role="tablist" aria-label="Switch between NGO and School dashboards">
+          <span class="switch-thumb" id="switch-thumb" aria-hidden="true"></span>
+          <button class="interface-btn active" type="button" data-interface="ngo" aria-pressed="true" role="tab" aria-selected="true">NGO</button>
+          <button class="interface-btn school-theme" type="button" data-interface="school" aria-pressed="false" role="tab" aria-selected="false">School</button>
+        </div>
       </div>
       <form id="auth-form" class="auth-inline">
         <input type="email" id="email" placeholder="admin@example.com" required />
@@ -28,39 +36,57 @@
     <div id="toast" class="toast hidden"></div>
 
     <div id="admin-shell" class="hidden-by-auth">
-      <div class="interface-switcher">
-        <button class="interface-btn active" type="button" data-interface="ngo">NGO Interface</button>
-        <button class="interface-btn" type="button" data-interface="makeup">Make Up Interface</button>
-      </div>
-      <nav class="page-nav">
-        <button class="tab-btn active" data-interface="ngo" data-page="reports-page">Overview</button>
-        <button class="tab-btn" data-interface="ngo" data-page="bulk-sms-page">Funds Use</button>
-        <button class="tab-btn" data-interface="ngo" data-page="clients-page">Clients</button>
-        <button class="tab-btn" data-interface="ngo" data-page="donations-page">Donations</button>
-        <button class="tab-btn" data-interface="ngo" data-page="exports-page">Exports</button>
-        <button class="tab-btn" data-interface="ngo" data-page="audit-log-page">Audit Log</button>
-        <button class="tab-btn" data-interface="makeup" data-page="makeup-registration-page">Registration</button>
-        <button class="tab-btn" data-interface="makeup" data-page="makeup-student-page">Student</button>
-        <button class="tab-btn" data-interface="makeup" data-page="makeup-receipt-page">Receipt</button>
+      <button type="button" id="mobile-nav-toggle" class="mobile-nav-toggle" aria-expanded="false" aria-controls="page-nav">
+        Dashboard Menu
+      </button>
+      <nav id="page-nav" class="page-nav mobile-collapsed">
+        <button class="tab-btn active dashboard-primary" data-interface="ngo" data-page="reports-page">NGO Dashboard</button>
+        <button class="tab-btn school-tab dashboard-primary" data-interface="school" data-page="school-dashboard-page">School Dashboard</button>
+        <p class="menu-heading">Legacy Admin Tools</p>
+        <button class="tab-btn legacy-tab" data-interface="ngo" data-page="bulk-sms-page">Funds Use</button>
+        <button class="tab-btn legacy-tab" data-interface="ngo" data-page="clients-page">Beneficiaries</button>
+        <button class="tab-btn legacy-tab" data-interface="ngo" data-page="donations-page">Donations</button>
+        <button class="tab-btn legacy-tab" data-interface="ngo" data-page="exports-page">Projects & Exports</button>
+        <button class="tab-btn legacy-tab" data-interface="ngo" data-page="audit-log-page">Volunteers & Audit</button>
+        <button class="tab-btn school-tab legacy-tab" data-interface="school" data-page="school-students-page">Students</button>
+        <button class="tab-btn school-tab legacy-tab" data-interface="school" data-page="school-events-page">Upcoming Events</button>
       </nav>
 
       <main>
         <section class="page active" id="reports-page" data-interface="ngo">
           <div class="card">
             <div class="row">
-              <h2>Dashboard Overview</h2>
+              <h2>NGO Dashboard</h2>
               <button type="button" id="refresh-dashboard-btn" class="secondary" disabled>Refresh Activity</button>
             </div>
-            <p class="hint">This dashboard updates from activities recorded on Funds Use, Beneficiaries, Donations, Exports, and Audit Log pages.</p>
+            <p class="hint">Monitor beneficiaries, donations, active projects, volunteers, and overall impact in one place.</p>
             <div class="split-3 metric-grid">
-              <div class="metric-card metric-funds"><strong id="dashboard-disbursements">0</strong><p>Funds use records</p></div>
-              <div class="metric-card metric-beneficiaries"><strong id="dashboard-beneficiaries">0</strong><p>Beneficiary records</p></div>
-              <div class="metric-card metric-donations"><strong id="dashboard-donations">0</strong><p>Donation records</p></div>
+              <div class="metric-card metric-funds"><strong id="dashboard-disbursements">0</strong><p>Beneficiaries</p></div>
+              <div class="metric-card metric-beneficiaries"><strong id="dashboard-beneficiaries">0</strong><p>Donations</p></div>
+              <div class="metric-card metric-donations"><strong id="dashboard-donations">0</strong><p>Active projects</p></div>
             </div>
             <div class="split-3 metric-grid">
-              <div class="metric-card metric-exports"><strong id="dashboard-exports">0</strong><p>Export requests</p></div>
+              <div class="metric-card metric-exports"><strong id="dashboard-exports">0</strong><p>Volunteers</p></div>
               <div class="metric-card metric-audit"><strong id="dashboard-audit">0</strong><p>Audit events</p></div>
               <div class="metric-card metric-sync"><strong id="dashboard-last-updated">-</strong><p>Last synced</p></div>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Donation & Impact Trends</h3>
+            <div class="split-2">
+              <canvas id="ngo-donation-trend-chart" width="640" height="260"></canvas>
+              <canvas id="ngo-project-distribution-chart" width="640" height="260"></canvas>
+            </div>
+            <div class="split-2">
+              <canvas id="ngo-impact-metrics-chart" width="640" height="260"></canvas>
+              <div class="event-card">
+                <h4>Recent Activities</h4>
+                <ul id="ngo-recent-activities" class="events-list">
+                  <li>Beneficiary outreach update synced.</li>
+                  <li>Volunteer tracking refreshed.</li>
+                  <li>Donation records reconciled.</li>
+                </ul>
+              </div>
             </div>
           </div>
           <div class="card">
@@ -102,18 +128,38 @@
           </div>
         </section>
 
-        <section class="page" id="makeup-registration-page" data-interface="makeup">
+        <section class="page" id="school-dashboard-page" data-interface="school">
           <div class="card">
-            <h2>Registration Approvals</h2>
-            <p class="hint">List view for registrations. Click any record to expand and edit status/payment details.</p>
-            <div class="actions">
-              <button type="button" id="load-registrations-btn" class="secondary" disabled>Load Registrations</button>
+            <div class="row">
+              <h2>School Dashboard</h2>
+              <button type="button" id="load-registrations-btn" class="secondary" disabled>Refresh School Activity</button>
             </div>
+            <p class="hint">Track enrollment, attendance, teachers, and achievement performance across classes.</p>
+            <div class="split-4 metric-grid">
+              <div class="metric-card metric-school-enrollment"><strong id="school-enrollment">0</strong><p>Student enrollment</p></div>
+              <div class="metric-card metric-school-attendance"><strong id="school-attendance">0%</strong><p>Attendance rate</p></div>
+              <div class="metric-card metric-school-teachers"><strong id="school-teachers">0</strong><p>Teacher count</p></div>
+              <div class="metric-card metric-school-achievement"><strong id="school-achievement">0%</strong><p>Achievement score</p></div>
+            </div>
+          </div>
+          <div class="card">
+            <h3>School Trends</h3>
+            <div class="split-2">
+              <canvas id="school-enrollment-trend-chart" width="640" height="260"></canvas>
+              <canvas id="school-attendance-chart" width="640" height="260"></canvas>
+            </div>
+            <div class="split-2">
+              <canvas id="school-academic-performance-chart" width="640" height="260"></canvas>
+              <canvas id="school-class-distribution-chart" width="640" height="260"></canvas>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Upcoming School Events</h3>
             <div id="upcoming-registrations-list"></div>
           </div>
         </section>
 
-        <section class="page" id="makeup-student-page" data-interface="makeup">
+        <section class="page" id="school-students-page" data-interface="school">
           <div class="card">
             <h2>Approved Students</h2>
             <p class="hint">This list shows students who have been paid and auto-moved from registrations.</p>
@@ -121,9 +167,10 @@
           </div>
         </section>
 
-        <section class="page" id="makeup-receipt-page" data-interface="makeup">
+        <section class="page" id="school-events-page" data-interface="school">
           <div class="card">
-            <h2>Receipt Generator</h2>
+            <h2>Upcoming Events & Communications</h2>
+            <p class="hint">Use this section to communicate updates and issue event-related payment receipts when needed.</p>
             <form id="receipt-form">
               <label>Student Name
                 <input type="text" id="receipt-student-name" placeholder="Student full name" required />
