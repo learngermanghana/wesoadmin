@@ -11,7 +11,7 @@ body {
 }
 
 .topbar {
-  background: #0b5aa9;
+  background: linear-gradient(135deg, #0b5aa9 0%, #1d4ed8 58%, #6d28d9 100%);
   color: #fff;
   padding: 1rem 2rem;
   display: flex;
@@ -27,6 +27,46 @@ body {
 
 .topbar p {
   margin: 0.3rem 0 0;
+}
+.brand-block p:last-child {
+  font-weight: 600;
+}
+
+.header-switch-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.switcher-kicker {
+  margin: 0;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.9;
+}
+.header-switcher {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: rgba(255, 255, 255, 0.22);
+  padding: 0.22rem;
+  border-radius: 999px;
+  min-width: 280px;
+}
+.switch-thumb {
+  position: absolute;
+  top: 0.22rem;
+  left: 0.22rem;
+  width: calc(50% - 0.22rem);
+  height: calc(100% - 0.44rem);
+  border-radius: 999px;
+  background: #0b5aa9;
+  transition: transform 220ms ease, background-color 220ms ease;
+  box-shadow: 0 6px 16px rgba(2, 6, 23, 0.25);
+}
+.header-switcher[data-active-interface="school"] .switch-thumb {
+  transform: translateX(100%);
+  background: #6d28d9;
 }
 
 .auth-inline {
@@ -78,6 +118,9 @@ body {
 }
 
 .interface-btn {
+  position: relative;
+  z-index: 1;
+  margin-top: 0;
   width: auto;
   padding: 0.6rem 1.1rem;
   border: 2px solid transparent;
@@ -106,6 +149,15 @@ body {
 .tab-btn {
   width: auto;
   background: #334155;
+}
+.tab-btn.legacy-tab {
+  background: #64748b;
+}
+.menu-heading {
+  margin: 0 0.2rem 0 1rem;
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 700;
 }
 
 .tab-btn.active {

@@ -181,6 +181,7 @@ let registrationsCache = [];
 let studentsCache = [];
 let lastGeneratedReceipt = null;
 let currentInterface = "ngo";
+const MOBILE_MENU_PREF_KEY = "weso-mobile-menu-open";
 
 if (window.Sentry && window.WESO_SENTRY_DSN) {
   window.Sentry.init({ dsn: window.WESO_SENTRY_DSN, environment: ENV });
@@ -286,6 +287,14 @@ function setInterfaceView(nextInterface) {
   });
 }
 
+function setMobileMenuState(expanded, persist = true) {
+  if (!mobileNavToggle || !pageNav) return;
+  mobileNavToggle.setAttribute("aria-expanded", expanded ? "true" : "false");
+  pageNav.classList.toggle("mobile-expanded", expanded);
+  pageNav.classList.toggle("mobile-collapsed", !expanded);
+  if (persist) localStorage.setItem(MOBILE_MENU_PREF_KEY, expanded ? "1" : "0");
+}
+
 function ensureInterfacePageIsVisible() {
   const activePage = pages.find((page) => page.classList.contains("active"));
   const activePageInterface = activePage?.dataset.interface || "ngo";
@@ -353,7 +362,7 @@ function drawSimpleChart(canvas, title, points, color = "#0b5aa9") {
   ctx.fillText(title, 16, 24);
   if (!points.length) {
     ctx.fillStyle = "#64748b";
-    ctx.fillText("No data.", 16, 48);
+    ctx.fillText("No data yet.", 16, 48);
     return;
   }
   const max = Math.max(...points.map((p) => p.value), 1);
@@ -374,6 +383,36 @@ function drawSimpleChart(canvas, title, points, color = "#0b5aa9") {
     ctx.fillText(point.label.slice(0, 8), x - 14, canvas.height - 20);
   });
   ctx.stroke();
+}
+
+function asDate(value) {
+  if (!value) return null;
+  if (typeof value?.toDate === "function") return value.toDate();
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function groupByMonth(records, dateKeys = ["createdAt", "at", "date", "updatedAt"]) {
+  const monthly = new Map();
+  records.forEach((record) => {
+    const rawDate = dateKeys.map((key) => record?.[key]).find(Boolean);
+    const date = asDate(rawDate);
+    if (!date) return;
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    monthly.set(key, (monthly.get(key) || 0) + 1);
+  });
+  return Array.from(monthly.entries())
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .slice(-6)
+    .map(([label, value]) => ({ label: label.slice(5), value }));
+}
+
+function averageFrom(rows, keys, fallback = 0) {
+  const values = rows
+    .map((row) => keys.map((key) => Number(row?.[key])).find((value) => Number.isFinite(value)))
+    .filter((value) => Number.isFinite(value));
+  if (!values.length) return fallback;
+  return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
 }
 
 function buildDisbursementTrend(payload) {
@@ -676,11 +715,19 @@ async function refreshDashboardOverview() {
     getDocs(collection(db, "adminAuditLogs")),
     getDocs(collection(db, "students"))
   ]);
-  if (dashboardDisbursements) dashboardDisbursements.textContent = String(disbursementsSnap.size);
-  if (dashboardBeneficiaries) dashboardBeneficiaries.textContent = String(Math.max(beneficiariesSnap.size, studentsSnap.size));
-  if (dashboardDonations) dashboardDonations.textContent = String(donationsSnap.size);
-  if (dashboardExports) dashboardExports.textContent = String(exportsSnap.size);
-  if (dashboardAudit) dashboardAudit.textContent = String(auditSnap.size);
+  const disbursementRows = disbursementsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const beneficiaryRows = beneficiariesSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const donationRows = donationsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const exportRows = exportsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const auditRows = auditSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const studentRows = studentsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const volunteerCount = new Set(auditRows.map((row) => row.user).filter(Boolean)).size;
+
+  if (dashboardDisbursements) dashboardDisbursements.textContent = String(beneficiaryRows.length);
+  if (dashboardBeneficiaries) dashboardBeneficiaries.textContent = String(donationRows.length);
+  if (dashboardDonations) dashboardDonations.textContent = String(exportRows.length);
+  if (dashboardExports) dashboardExports.textContent = String(volunteerCount);
+  if (dashboardAudit) dashboardAudit.textContent = String(auditRows.length);
   if (dashboardLastUpdated) dashboardLastUpdated.textContent = new Date().toLocaleString();
   const donationTrendPoints = [
     { label: "Jan", value: Math.max(2, Math.round(donationsSnap.size * 0.5)) },

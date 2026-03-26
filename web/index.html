@@ -8,10 +8,18 @@
   </head>
   <body>
     <header class="topbar">
-      <div>
+      <div class="brand-block">
         <h1>Wesomo Child Cancer Foundation</h1>
         <p>Admin Dashboard</p>
         <p id="auth-status">Not signed in.</p>
+      </div>
+      <div class="header-switch-shell" aria-label="Dashboard mode switcher">
+        <p class="switcher-kicker">Smart Switcher</p>
+        <div class="header-switcher" role="tablist" aria-label="Switch between NGO and School dashboards">
+          <span class="switch-thumb" id="switch-thumb" aria-hidden="true"></span>
+          <button class="interface-btn active" type="button" data-interface="ngo" aria-pressed="true" role="tab" aria-selected="true">NGO</button>
+          <button class="interface-btn school-theme" type="button" data-interface="school" aria-pressed="false" role="tab" aria-selected="false">School</button>
+        </div>
       </div>
       <form id="auth-form" class="auth-inline">
         <input type="email" id="email" placeholder="admin@example.com" required />
@@ -57,12 +65,12 @@
             </div>
             <p class="hint">Monitor beneficiaries, donations, active projects, volunteers, and overall impact in one place.</p>
             <div class="split-3 metric-grid">
-              <div class="metric-card metric-funds"><strong id="dashboard-disbursements">0</strong><p>Funds use records</p></div>
-              <div class="metric-card metric-beneficiaries"><strong id="dashboard-beneficiaries">0</strong><p>Beneficiary records</p></div>
-              <div class="metric-card metric-donations"><strong id="dashboard-donations">0</strong><p>Donation records</p></div>
+              <div class="metric-card metric-funds"><strong id="dashboard-disbursements">0</strong><p>Beneficiaries</p></div>
+              <div class="metric-card metric-beneficiaries"><strong id="dashboard-beneficiaries">0</strong><p>Donations</p></div>
+              <div class="metric-card metric-donations"><strong id="dashboard-donations">0</strong><p>Active projects</p></div>
             </div>
             <div class="split-3 metric-grid">
-              <div class="metric-card metric-exports"><strong id="dashboard-exports">0</strong><p>Export requests</p></div>
+              <div class="metric-card metric-exports"><strong id="dashboard-exports">0</strong><p>Volunteers</p></div>
               <div class="metric-card metric-audit"><strong id="dashboard-audit">0</strong><p>Audit events</p></div>
               <div class="metric-card metric-sync"><strong id="dashboard-last-updated">-</strong><p>Last synced</p></div>
             </div>
@@ -165,7 +173,8 @@
 
         <section class="page" id="makeup-receipt-page" data-interface="school">
           <div class="card">
-            <h2>Receipt Generator</h2>
+            <h2>Upcoming Events & Communications</h2>
+            <p class="hint">Use this section to communicate updates and issue event-related payment receipts when needed.</p>
             <form id="receipt-form">
               <label>Student Name
                 <input type="text" id="receipt-student-name" placeholder="Student full name" required />
