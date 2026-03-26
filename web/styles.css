@@ -100,8 +100,21 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  padding: 0.25rem 1rem 1rem;
+  padding: 0 1rem 1rem;
+}
+
+.interface-switcher {
+  display: flex;
+  gap: 0.5rem;
+  padding: 1rem 1rem 0.5rem;
   align-items: center;
+  flex-wrap: wrap;
+}
+
+.switcher-title {
+  font-weight: 700;
+  color: #0f172a;
+  margin-right: 0.5rem;
 }
 
 .interface-btn {
@@ -109,22 +122,28 @@ body {
   z-index: 1;
   margin-top: 0;
   width: auto;
-  min-width: 110px;
-  min-height: 48px;
-  border: 0;
-  background: transparent;
-  color: #e2e8f0;
+  padding: 0.6rem 1.1rem;
+  border: 2px solid transparent;
+  background: #dbeafe;
+  color: #0b5aa9;
   font-weight: 700;
-  text-align: center;
-  border-radius: 999px;
 }
 
 .interface-btn.active {
+  background: #0b5aa9;
   color: #fff;
+  border-color: #0b5aa9;
 }
 
 .interface-btn.school-theme {
-  color: #f3e8ff;
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.interface-btn.school-theme.active {
+  background: #6d28d9;
+  border-color: #6d28d9;
+  color: #fff;
 }
 
 .tab-btn {
@@ -152,7 +171,6 @@ body {
   display: none;
   margin: 0 1rem 0.75rem;
   width: calc(100% - 2rem);
-  min-height: 48px;
   background: #1e293b;
 }
 
@@ -346,21 +364,6 @@ button:disabled {
 }
 
 @media (max-width: 800px) {
-  .topbar {
-    padding: 1rem;
-  }
-  .header-switch-shell,
-  .header-switcher {
-    width: 100%;
-    min-width: 0;
-  }
-  .auth-inline {
-    width: 100%;
-  }
-  .auth-inline input,
-  .auth-inline button {
-    min-height: 48px;
-  }
   .mobile-nav-toggle {
     display: block;
   }
@@ -370,17 +373,14 @@ button:disabled {
   .page-nav.mobile-expanded {
     display: flex;
     padding-top: 0;
-    gap: 0.65rem;
   }
   .tab-btn {
     width: 100%;
     min-height: 48px;
     font-size: 1rem;
   }
-  .menu-heading {
-    width: 100%;
-    margin: 0.5rem 0 0;
-    padding-left: 0.15rem;
+  .interface-switcher {
+    padding-bottom: 0.75rem;
   }
 }
 

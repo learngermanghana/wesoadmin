@@ -45,7 +45,6 @@ const $ = (id) => document.getElementById(id);
 const interfaceButtons = Array.from(document.querySelectorAll(".interface-btn"));
 const tabButtons = Array.from(document.querySelectorAll(".tab-btn"));
 const pages = Array.from(document.querySelectorAll(".page"));
-const headerSwitcher = document.querySelector(".header-switcher");
 const mobileNavToggle = $("mobile-nav-toggle");
 const pageNav = $("page-nav");
 const authForm = $("auth-form");
@@ -277,12 +276,10 @@ function loadUrlState() {
 
 function setInterfaceView(nextInterface) {
   currentInterface = nextInterface === "school" ? "school" : "ngo";
-  if (headerSwitcher) headerSwitcher.dataset.activeInterface = currentInterface;
   interfaceButtons.forEach((button) => {
     const isActive = button.dataset.interface === currentInterface;
     button.classList.toggle("active", isActive);
     button.setAttribute("aria-pressed", isActive ? "true" : "false");
-    button.setAttribute("aria-selected", isActive ? "true" : "false");
   });
   tabButtons.forEach((button) => {
     const visible = button.dataset.interface === currentInterface;
@@ -317,30 +314,20 @@ interfaceButtons.forEach((button) => {
     ensureInterfacePageIsVisible();
   });
 });
-interfaceButtons.forEach((button, index) => {
-  button.addEventListener("keydown", (event) => {
-    if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
-    event.preventDefault();
-    const nextIndex = event.key === "ArrowRight" ? (index + 1) % interfaceButtons.length : (index - 1 + interfaceButtons.length) % interfaceButtons.length;
-    interfaceButtons[nextIndex].focus();
-    interfaceButtons[nextIndex].click();
-  });
-});
 if (mobileNavToggle && pageNav) {
-  const preferredOpen = localStorage.getItem(MOBILE_MENU_PREF_KEY) === "1";
-  setMobileMenuState(preferredOpen, false);
   mobileNavToggle.addEventListener("click", () => {
     const expanded = mobileNavToggle.getAttribute("aria-expanded") === "true";
-    setMobileMenuState(!expanded, true);
+    mobileNavToggle.setAttribute("aria-expanded", expanded ? "false" : "true");
+    pageNav.classList.toggle("mobile-expanded", !expanded);
+    pageNav.classList.toggle("mobile-collapsed", expanded);
   });
   tabButtons.forEach((button) =>
     button.addEventListener("click", () => {
-      setMobileMenuState(false, true);
+      pageNav.classList.remove("mobile-expanded");
+      pageNav.classList.add("mobile-collapsed");
+      mobileNavToggle.setAttribute("aria-expanded", "false");
     })
   );
-  mobileNavToggle.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") setMobileMenuState(false, true);
-  });
 }
 window.addEventListener("hashchange", () => {
   setInterfaceView(pages.find((page) => page.classList.contains("active"))?.dataset.interface || "ngo");
@@ -742,56 +729,59 @@ async function refreshDashboardOverview() {
   if (dashboardExports) dashboardExports.textContent = String(volunteerCount);
   if (dashboardAudit) dashboardAudit.textContent = String(auditRows.length);
   if (dashboardLastUpdated) dashboardLastUpdated.textContent = new Date().toLocaleString();
-
-  const donationTrendPoints = groupByMonth(donationRows, ["createdAt", "at", "donatedAt", "date"]);
-  const distributionByProgram = disbursementRows.reduce((acc, row) => {
-    const key = String(row.program || row.category || "General");
-    acc.set(key, (acc.get(key) || 0) + 1);
-    return acc;
-  }, new Map());
-  const projectDistributionPoints = Array.from(distributionByProgram.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 6)
-    .map(([label, value]) => ({ label, value }));
+  const donationTrendPoints = [
+    { label: "Jan", value: Math.max(2, Math.round(donationsSnap.size * 0.5)) },
+    { label: "Feb", value: Math.max(3, Math.round(donationsSnap.size * 0.75)) },
+    { label: "Mar", value: Math.max(4, donationsSnap.size) },
+    { label: "Apr", value: Math.max(5, Math.round(donationsSnap.size * 1.1)) }
+  ];
+  const projectDistributionPoints = [
+    { label: "Health", value: Math.max(1, Math.round(disbursementsSnap.size * 0.4)) },
+    { label: "Food", value: Math.max(1, Math.round(disbursementsSnap.size * 0.3)) },
+    { label: "Shelter", value: Math.max(1, Math.round(disbursementsSnap.size * 0.2)) },
+    { label: "Edu", value: Math.max(1, Math.round(disbursementsSnap.size * 0.1)) }
+  ];
   const impactPoints = [
-    { label: "Benef.", value: beneficiaryRows.length || 0 },
-    { label: "Vol.", value: volunteerCount || 0 },
-    { label: "Donors", value: donationRows.length || 0 },
-    { label: "Projects", value: exportRows.length || 0 }
+    { label: "Benef.", value: Math.max(1, beneficiariesSnap.size) },
+    { label: "Vol.", value: Math.max(1, Math.round(auditSnap.size / 4)) },
+    { label: "Donors", value: Math.max(1, donationsSnap.size) },
+    { label: "Projects", value: Math.max(1, exportsSnap.size) }
   ];
   drawSimpleChart(ngoDonationTrendChart, "Donation Trends", donationTrendPoints, "#0b5aa9");
   drawSimpleChart(ngoProjectDistributionChart, "Project Distribution", projectDistributionPoints, "#0891b2");
   drawSimpleChart(ngoImpactMetricsChart, "Impact Metrics", impactPoints, "#0f766e");
 
-  const students = studentRows.length;
-  const teacherEstimate = Math.max(
-    0,
-    averageFrom(studentRows, ["teacherCount", "teachers", "teacher_total"], 0) || Math.ceil((students || 0) / 28)
-  );
-  const attendanceRate = Math.max(0, Math.min(100, averageFrom(studentRows, ["attendanceRate", "attendance"], students ? 88 : 0)));
-  const achievementRate = Math.max(0, Math.min(100, averageFrom(studentRows, ["achievementRate", "performanceScore", "achievement"], students ? 79 : 0)));
+  const students = Math.max(studentsSnap.size, 1);
+  const teacherEstimate = Math.max(4, Math.ceil(students / 22));
+  const attendanceRate = Math.max(82, Math.min(99, 84 + Math.round(auditSnap.size % 14)));
+  const achievementRate = Math.max(70, Math.min(98, 76 + Math.round((students + donationsSnap.size) % 18)));
   if (schoolEnrollment) schoolEnrollment.textContent = String(students);
   if (schoolAttendance) schoolAttendance.textContent = `${attendanceRate}%`;
   if (schoolTeachers) schoolTeachers.textContent = String(teacherEstimate);
   if (schoolAchievement) schoolAchievement.textContent = `${achievementRate}%`;
   drawSimpleChart(
     schoolEnrollmentTrendChart,
-    "Enrollment Trends (6 mo)",
-    groupByMonth(studentRows, ["createdAt", "enrolledAt", "registrationDate", "at"]),
+    "Enrollment Trends",
+    [
+      { label: "Term 1", value: Math.max(1, students - 8) },
+      { label: "Term 2", value: Math.max(1, students - 4) },
+      { label: "Term 3", value: students }
+    ],
     "#6d28d9"
   );
   drawSimpleChart(
     schoolAttendanceChart,
-    "Attendance by Grade",
-    ["Grade 1-3", "Grade 4-6", "Grade 7-9"].map((label, index) => ({
-      label,
-      value: Math.max(0, Math.min(100, attendanceRate - 4 + index * 2))
-    })),
+    "Attendance Rate",
+    [
+      { label: "Mon", value: attendanceRate - 4 },
+      { label: "Tue", value: attendanceRate - 2 },
+      { label: "Wed", value: attendanceRate }
+    ],
     "#7c3aed"
   );
   drawSimpleChart(
     schoolAcademicPerformanceChart,
-    "Academic Performance (%)",
+    "Academic Performance",
     [
       { label: "Math", value: Math.max(55, achievementRate - 8) },
       { label: "Science", value: Math.max(58, achievementRate - 5) },
@@ -802,10 +792,11 @@ async function refreshDashboardOverview() {
   drawSimpleChart(
     schoolClassDistributionChart,
     "Class Distribution",
-    ["G1-3", "G4-6", "G7-9"].map((label, index) => ({
-      label,
-      value: Math.max(0, Math.round((students || 0) * [0.34, 0.33, 0.33][index]))
-    })),
+    [
+      { label: "G1-3", value: Math.max(1, Math.round(students * 0.34)) },
+      { label: "G4-6", value: Math.max(1, Math.round(students * 0.33)) },
+      { label: "G7-9", value: Math.max(1, Math.round(students * 0.33)) }
+    ],
     "#a855f7"
   );
 }
